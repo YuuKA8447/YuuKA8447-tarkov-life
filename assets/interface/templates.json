@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "top_size": [
+    1920,
+    240
+  ],
+  "templates": {
+    "hud_hotbar": {
+      "file": "hud_hotbar.png",
+      "source": "ui识别\\画面识别 A 入场界面,战斗HUD\\测试图2560 1600 16：10\\战斗HUD画面2.png",
+      "crop": [
+        565,
+        0,
+        1490,
+        32
+      ],
+      "box": [
+        565,
+        0,
+        1490,
+        32
+      ],
+      "margin": 8,
+      "kind": "gray",
+      "width": 925,
+      "height": 32,
+      "bytes": 14156
+    },
+    "hud_body": {
+      "file": "hud_body.png",
+      "source": "ui识别\\画面识别 A 入场界面,战斗HUD\\测试图2560 1600 16：10\\战斗HUD画面1.png",
+      "crop": [
+        0,
+        0,
+        115,
+        240
+      ],
+      "box": [
+        0,
+        0,
+        120,
+        240
+      ],
+      "margin": 0,
+      "kind": "edges",
+      "width": 115,
+      "height": 240,
+      "bytes": 2431
+    },
+    "hud_body_169": {
+      "file": "hud_body_169.png",
+      "source": "ui识别\\画面识别 A 入场界面,战斗HUD\\测试图2560 1440 16：9\\2026-10-25[15-04]_69.02, 2.00, -68.86_0.04727, 0.04666, -0.00221, 0.99779_15.47 (0).png",
+      "crop": [
+        0,
+        0,
+        120,
+        240
+      ],
+      "box": [
+        0,
+        0,
+        120,
+        240
+      ],
+      "margin": 0,
+      "kind": "edges",
+      "width": 120,
+      "height": 240,
+      "bytes": 2693
+    },
+    "extract_B": {
+      "file": "extract_B.png",
+      "source": "ui识别\\画面识别 B 撤离点,战斗HUD\\测试图\\撤离点测试图.png",
+      "crop": [
+        1345,
+        3,
+        1700,
+        38
+      ],
+      "box": [
+        1340,
+        0,
+        1705,
+        43
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 355,
+      "height": 35,
+      "bytes": 3828
+    },
+    "end_M": {
+      "file": "end_M.png",
+      "source": "ui识别\\画面识别 M 撤离结束\\测试图\\测试图1.png",
+      "crop": [
+        865,
+        0,
+        1061,
+        84
+      ],
+      "box": [
+        820,
+        0,
+        1110,
+        120
+      ],
+      "margin": 12,
+      "kind": "gray",
+      "width": 196,
+      "height": 84,
+      "bytes": 8407
+    },
+    "console_K": {
+      "file": "console_K.png",
+      "source": "ui识别\\画面识别 K 二级菜单,控制台\\测试图\\测试图.png",
+      "crop": [
+        0,
+        0,
+        270,
+        32
+      ],
+      "box": [
+        0,
+        0,
+        275,
+        36
+      ],
+      "margin": 5,
+      "kind": "gray",
+      "width": 270,
+      "height": 32,
+      "bytes": 1644
+    },
+    "pause_C": {
+      "file": "pause_C.png",
+      "source": "ui识别\\画面识别 C 二级菜单,游戏主页面\\测试图\\测试画面.png",
+      "crop": [
+        450,
+        90,
+        1430,
+        240
+      ],
+      "box": [
+        0,
+        0,
+        1920,
+        240
+      ],
+      "margin": 0,
+      "kind": "gray",
+      "width": 980,
+      "height": 150,
+      "bytes": 105089
+    },
+    "menu_return": {
+      "file": "menu_return.png",
+      "source": "ui识别\\画面识别 F 二级菜单,健康\\测试图\\测试图.png",
+      "crop": [
+        1755,
+        0,
+        1840,
+        45
+      ],
+      "box": [
+        1750,
+        0,
+        1845,
+        50
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 85,
+      "height": 45,
+      "bytes": 1709
+    },
+    "settings_L": {
+      "file": "settings_L.png",
+      "source": "ui识别\\画面识别 L 三级菜单,设置\\测试图\\测试图1.png",
+      "crop": [
+        720,
+        8,
+        1010,
+        58
+      ],
+      "box": [
+        710,
+        0,
+        1020,
+        68
+      ],
+      "margin": 10,
+      "kind": "gray",
+      "width": 290,
+      "height": 50,
+      "bytes": 8997
+    },
+    "tabs_D": {
+      "file": "tabs_D.png",
+      "source": "ui识别\\画面识别 D 二级菜单,背包界面\\测试图\\测试画面1.png",
+      "crop": [
+        128,
+        5,
+        253,
+        45
+      ],
+      "box": [
+        128,
+        5,
+        253,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2799
+    },
+    "tabs_E": {
+      "file": "tabs_E.png",
+      "source": "ui识别\\画面识别 E 二级菜单,总览\\测试图\\测试图1.png",
+      "crop": [
+        0,
+        5,
+        120,
+        45
+      ],
+      "box": [
+        0,
+        5,
+        120,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 120,
+      "height": 40,
+      "bytes": 2683
+    },
+    "tabs_F": {
+      "file": "tabs_F.png",
+      "source": "ui识别\\画面识别 F 二级菜单,健康\\测试图\\测试图.png",
+      "crop": [
+        250,
+        5,
+        375,
+        45
+      ],
+      "box": [
+        250,
+        5,
+        375,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2840
+    },
+    "tabs_G": {
+      "file": "tabs_G.png",
+      "source": "ui识别\\画面识别 G 二级菜单,成就\\测试图\\测试图.png",
+      "crop": [
+        372,
+        5,
+        497,
+        45
+      ],
+      "box": [
+        372,
+        5,
+        497,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2735
+    },
+    "tabs_H": {
+      "file": "tabs_H.png",
+      "source": "ui识别\\测试画面 H 二级菜单,地图\\测试图\\测试图.png",
+      "crop": [
+        494,
+        5,
+        619,
+        45
+      ],
+      "box": [
+        494,
+        5,
+        619,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2595
+    },
+    "tabs_I": {
+      "file": "tabs_I.png",
+      "source": "ui识别\\画面识别 I 二级菜单,任务\\测试图\\测试图.png",
+      "crop": [
+        616,
+        5,
+        741,
+        45
+      ],
+      "box": [
+        616,
+        5,
+        741,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2294
+    },
+    "tabs_J": {
+      "file": "tabs_J.png",
+      "source": "ui识别\\画面识别 J 二级菜单,成就\\测试图\\联想截图_20261022143802.png",
+      "crop": [
+        738,
+        5,
+        863,
+        45
+      ],
+      "box": [
+        738,
+        5,
+        863,
+        45
+      ],
+      "margin": 6,
+      "kind": "gray",
+      "width": 125,
+      "height": 40,
+      "bytes": 2400
+    },
+    "extract_found": {
+      "file": "extract_found.png",
+      "source": "ui识别\\画面识别 B 撤离点,战斗HUD\\找到撤离点_黑名单(不参与识别).png",
+      "crop": [
+        0,
+        0,
+        572,
+        72
+      ],
+      "box": [
+        1200,
+        0,
+        1820,
+        110
+      ],
+      "margin": 0,
+      "kind": "gray",
+      "width": 572,
+      "height": 72,
+      "bytes": 7466
+    }
+  }
+}

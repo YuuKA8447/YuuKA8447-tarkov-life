@@ -1,0 +1,36 @@
+# 构建与发布产物（不随仓库分发）
+/build/
+/dist/
+/release/
+/base/
+/tools/
+
+# 本地历史归档、拆包与隔离目录
+/项目文件历史版本/
+/冗余文件及垃圾文件隔离区/
+/项目exe拆包文件/
+
+# 原始截图：仅保留目录说明，图片不随仓库分发
+/ui识别/*
+!/ui识别/README.md
+
+# 内部工作记忆与文档缓存
+/.ai-memory/
+**/.writing/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 本地令牌与临时文件
+github_token.txt
+.github_token
+*.token
+新建 文本文档.txt
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
