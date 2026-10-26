@@ -2,13 +2,20 @@
 
 本项目版本号格式为 `主版本.次版本.修订号.构建号`。
 
+## GitHub 页面重构（2026-10-26）
+
+- 完全替换旧版 README 布局，改为 Hero 横幅 → 界面画廊 → 核心能力 → 下载 → 快速上手 → 识别原理 → 精简版本历史的结构。
+- 使用 V1.3.2.2 发布版重新截取主界面、进阶设置上下两屏、日志诊断与常驻识别徽标；旧 README 与 5 张旧展示图已移入回收站，备份在 `build/_old_layout_backup_20261026/`。
+- 新增 `docs/images/hero.png` 与 `docs/images/templates-grid.png`，展示 17 张内嵌模板及文件名/页面对照。
+- 仓库地址更新为 `https://github.com/YuuKA8447/YuuKA8447-tarkov-life`。
+
 ## GitHub 仓库迁移与重新发布（2026-10-26）
 
 - 原 GitHub 账号 `youxia8447-oss` 已被停用，原仓库 `youxia8447-oss/tarkov-life` 及其 Release 不再可用。
-- 新仓库迁移至 GitHub 账号 `YuuKA8447`，地址为 `https://github.com/YuuKA8447/tarkov-life`，公开仓库，默认分支 `main`。
+- 新仓库迁移至 GitHub 账号 `YuuKA8447`，地址为 `https://github.com/YuuKA8447/YuuKA8447-tarkov-life`，公开仓库，默认分支 `main`。
 - 新仓库以全新 Git 历史重新初始化，仅重新发布当前正式版 `v1.3.2.2`；原 `v1.1.1.0`、`v1.2.0.1` 两个 Release 未迁移，历史包与校验值保留在本地归档。
 - 仓库内只保留 `assets/interface` 的 17 张归一化模板与 `ui识别/README.md` 目录说明；原始截图因体积与隐私原因不随仓库分发。
-- 文档中的旧账号链接已统一替换为 `YuuKA8447/tarkov-life`；历史版本说明页保留存档性质，下载链接可能不可用。
+- 文档中的旧账号链接已统一替换为 `YuuKA8447/YuuKA8447-tarkov-life`；历史版本说明页保留存档性质，下载链接可能不可用。
 
 ## 旧仓库重新发布：版本号归一化（2026-10-26）
 

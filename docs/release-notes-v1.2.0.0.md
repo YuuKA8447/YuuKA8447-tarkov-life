@@ -1,6 +1,6 @@
 # 从零开始的塔科夫生活 V1.2.0.0 正式版
 
-> 归档说明：新仓库 `YuuKA8447/tarkov-life` 仅发布 V1.3.2.2，本页为历史版本记录，下载链接可能不可用。
+> 归档说明：新仓库 `YuuKA8447/YuuKA8447-tarkov-life` 仅发布 V1.3.2.2，本页为历史版本记录，下载链接可能不可用。
 
 
 > 本版本已归一化为 **V1.2.0.1** 并重新发布，请以 [V1.2.0.1 发布说明](release-notes-v1.2.0.1.md) 为准；本文仅保留作历史记录。
@@ -24,9 +24,9 @@
 
 | 文件 | 说明 |
 | --- | --- |
-| [`Tarkov-Life-V1.2.0.0.zip`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.zip) | 推荐。解压后含中文命名的 EXE、使用说明、更新说明、项目说明与 SHA256 |
-| [`Tarkov-Life-V1.2.0.0.exe`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.exe) | 单文件免安装版本 |
-| [`Tarkov-Life-V1.2.0.0.sha256`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
+| [`Tarkov-Life-V1.2.0.0.zip`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.zip) | 推荐。解压后含中文命名的 EXE、使用说明、更新说明、项目说明与 SHA256 |
+| [`Tarkov-Life-V1.2.0.0.exe`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.exe) | 单文件免安装版本 |
+| [`Tarkov-Life-V1.2.0.0.sha256`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.2.0.0/Tarkov-Life-V1.2.0.0.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
 
 GitHub Release 资产使用 ASCII 文件名；页面上的中文 label 与解压后的文件保持原中文名。
 

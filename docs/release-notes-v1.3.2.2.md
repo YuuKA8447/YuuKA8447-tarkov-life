@@ -40,9 +40,9 @@ V1.3.2.2 是自原 V1.2.0.0 以来的累计正式版，包含 M/Z 撤离状态�
 
 | 文件 | 说明 |
 | --- | --- |
-| [`Tarkov-Life-V1.3.2.2.zip`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.zip) | 推荐。解压后含中文命名的 EXE、`icons` 目录、使用说明、更新说明、项目说明与 SHA256 |
-| [`Tarkov-Life-V1.3.2.2.exe`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.exe) | 单文件免安装版本 |
-| [`Tarkov-Life-V1.3.2.2.sha256`](https://github.com/YuuKA8447/tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
+| [`Tarkov-Life-V1.3.2.2.zip`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.zip) | 推荐。解压后含中文命名的 EXE、`icons` 目录、使用说明、更新说明、项目说明与 SHA256 |
+| [`Tarkov-Life-V1.3.2.2.exe`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.exe) | 单文件免安装版本 |
+| [`Tarkov-Life-V1.3.2.2.sha256`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.3.2.2/Tarkov-Life-V1.3.2.2.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
 
 GitHub Release 资产使用 ASCII 文件名；Release 页面上的中文 label 与解压后的文件保持原中文名。
 
