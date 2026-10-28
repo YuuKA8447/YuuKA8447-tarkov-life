@@ -29,6 +29,10 @@ REQUIRED = (
     "end_M",
     "console_K",
     "pause_C",
+    "pause_C_lab",
+    "pause_C_factory",
+    "pause_C_nameless",
+    "pause_C_forest",
     "menu_return",
     "settings_L",
     "tabs_D",
@@ -61,15 +65,21 @@ def __init__(self, asset_dir=None):
     self.last_interface='0'
     self.last_top=None
     self.last_extraction_seen=None
-    template=self.iface_templates['pause_C']
-    base=cv2.resize(template,(max(1,template.shape[1]//2),
-        max(1,template.shape[0]//2)),interpolation=cv2.INTER_AREA)
-    self.home_variants=[cv2.resize(base,
-        (max(1,int(base.shape[1]*scale)),
-         max(1,int(base.shape[0]*scale*aspect))),
-        interpolation=cv2.INTER_AREA)
-        for aspect in (1.0,1.2)
-        for scale in (0.8,0.9,1.0,1.1,1.2)]
+    # The pause background is map scenery: each map projects the logo at a
+    # different height/scale.  Build one variant family per map template and
+    # let the C check take the best score across all of them.
+    self.home_families=[]
+    for name in ('pause_C','pause_C_lab','pause_C_factory',
+                 'pause_C_nameless','pause_C_forest'):
+        template=self.iface_templates[name]
+        base=cv2.resize(template,(max(1,template.shape[1]//2),
+            max(1,template.shape[0]//2)),interpolation=cv2.INTER_AREA)
+        self.home_families.append([cv2.resize(base,
+            (max(1,int(base.shape[1]*scale)),
+             max(1,int(base.shape[0]*scale*aspect))),
+            interpolation=cv2.INTER_AREA)
+            for aspect in (1.0,1.2)
+            for scale in (0.9,1.0,1.1)])
     self.home_small=(960,120)
 '''
 
@@ -92,29 +102,51 @@ def normalize_top(self, frame, full_size=None):
 SCORES_SOURCE = '''
 def scores_top(self, top):
     gray=cv2.cvtColor(top,cv2.COLOR_BGR2GRAY)
-    hotbar=0.
-    t=self.iface_templates['hud_hotbar']
-    x1,y1,x2,y2,margin=self.iface_meta['hud_hotbar']
-    region=gray[max(0,y1-margin):min(gray.shape[0],y2+margin),
-        max(0,x1-margin):x2+margin]
-    if region.shape[0]>=t.shape[0] and region.shape[1]>=t.shape[1]:
-        hotbar=max(0.,float(cv2.minMaxLoc(
-            cv2.matchTemplate(region,t,cv2.TM_CCOEFF_NORMED))[1]))
-    body=0.
-    for name in ('hud_body','hud_body_169'):
+    def body_at(name,enhance):
         t=self.iface_templates[name]
         x1,y1,x2,y2,margin=self.iface_meta[name]
         region=gray[max(0,y1-margin):min(gray.shape[0],y2+margin),
             max(0,x1-margin):x2+margin]
-        if region.shape[0]>=t.shape[0] and region.shape[1]>=t.shape[1]:
-            edges=cv2.Canny(region,35,90)
-            if np.any(edges):
-                distance=cv2.distanceTransform(255-edges,cv2.DIST_L2,3)
-                distance=distance[:t.shape[0],:t.shape[1]]
-                values=distance[t>0]
-                if len(values):
-                    body=max(body,float(np.mean(np.maximum(0,1-values/2.2))))
-    combat=min(1.,.70*body+.30*hotbar)
+        if region.shape[0]<t.shape[0] or region.shape[1]<t.shape[1]:
+            return 0.
+        if enhance:
+            region=cv2.createCLAHE(clipLimit=2.0,
+                tileGridSize=(8,8)).apply(region)
+        edges=cv2.Canny(region,35,90)
+        if not np.any(edges):
+            return 0.
+        distance=cv2.distanceTransform(255-edges,cv2.DIST_L2,3)
+        distance=distance[:t.shape[0],:t.shape[1]]
+        values=distance[t>0]
+        if not len(values):
+            return 0.
+        return float(np.mean(np.maximum(0,1-values/2.2)))
+    def hotbar_at(enhance):
+        t=self.iface_templates['hud_hotbar']
+        x1,y1,x2,y2,margin=self.iface_meta['hud_hotbar']
+        region=gray[max(0,y1-margin):min(gray.shape[0],y2+margin),
+            max(0,x1-margin):x2+margin]
+        if region.shape[0]<t.shape[0] or region.shape[1]<t.shape[1]:
+            return 0.
+        if enhance:
+            region=cv2.createCLAHE(clipLimit=2.0,
+                tileGridSize=(8,8)).apply(region)
+        return max(0.,float(cv2.minMaxLoc(
+            cv2.matchTemplate(region,t,cv2.TM_CCOEFF_NORMED))[1]))
+    def measure(enhance):
+        hotbar=hotbar_at(enhance)
+        body=max(body_at('hud_body',enhance),
+            body_at('hud_body_169',enhance))
+        return hotbar,body,min(1.,.70*body+.30*hotbar)
+    hotbar,body,combat=measure(False)
+    # Overexposure clips gradients and drops the outline score even though the
+    # HUD is still there.  Re-measure the same regions with local contrast
+    # equalisation, but only when the raw outline already looks like a HUD:
+    # menus peak at .285 body while combat HUDs start above .49.
+    if body>=.35:
+        hotbar2,body2,combat2=measure(True)
+        if combat2>combat:
+            hotbar,body,combat=hotbar2,body2,combat2
     self.last_features=dict(body_shape=body,hotbar=hotbar,
         bar_frames=hotbar,label_shape=body,combat_score=combat)
     return hotbar,combat
@@ -196,6 +228,28 @@ def menu_score_top(self, top, gray=None):
             return 0.
         return max(0.,float(cv2.minMaxLoc(
             cv2.matchTemplate(region,template,cv2.TM_CCOEFF_NORMED))[1]))
+    def match_tab(key):
+        template=self.iface_templates['tabs_'+key]
+        x1,y1,x2,y2,margin=self.iface_meta['tabs_'+key]
+        region=gray[max(0,y1-margin):min(gray.shape[0],y2+margin),
+            max(0,x1-margin):x2+margin]
+        if (region.shape[0]<template.shape[0]
+                or region.shape[1]<template.shape[1]):
+            return 0.
+        best=max(0.,float(cv2.minMaxLoc(
+            cv2.matchTemplate(region,template,cv2.TM_CCOEFF_NORMED))[1]))
+        # Overexposed tab bars clip the label gradients, so the raw match of the
+        # correct tab lands under the .70 direct-match gate.  Re-match the same
+        # crop with local contrast equalisation and keep the best score.  Clip
+        # limits stay at 2/4: stronger settings boosted the wrong neighbouring
+        # tab on the J page during calibration.
+        for clip in (2.,4.):
+            enhanced=cv2.createCLAHE(clipLimit=clip,
+                tileGridSize=(8,8)).apply(region)
+            best=max(best,float(cv2.minMaxLoc(
+                cv2.matchTemplate(enhanced,template,
+                    cv2.TM_CCOEFF_NORMED))[1]))
+        return best
     extraction_banner=bool((self.last_extraction or {}).get('banner'))
     console=match('console_K')
     if console>=.62:
@@ -212,7 +266,7 @@ def menu_score_top(self, top, gray=None):
             tab_scores={},inventory=0.,pause=0.,
             extraction_banner=extraction_banner,skipped_for_combat=False)
         return 1.
-    tab_scores={key:match('tabs_'+key)
+    tab_scores={key:match_tab(key)
         for key in ('D','E','F','G','H','I','J')}
     best_tab=max(tab_scores,key=tab_scores.get)
     tab_score=tab_scores[best_tab]
@@ -224,6 +278,27 @@ def menu_score_top(self, top, gray=None):
             extraction_banner=extraction_banner,skipped_for_combat=False)
         return 1.
     menu_return=match('menu_return')
+    # Semi-transparent or overexposed menus wash out the tab templates, but
+    # the active tab is still clearly brighter than every neighbour.  Use the
+    # brightness ranking of the seven tab boxes as a fallback.  The bright,
+    # edge-rich "返回" label guards against combat HUDs and map screens.
+    tab_boxes=(('E',0,5,120,45),('D',128,5,253,45),('F',250,5,375,45),
+        ('G',372,5,497,45),('H',494,5,619,45),('I',616,5,741,45),
+        ('J',738,5,863,45))
+    ranked=sorted(((float(gray[y1:y2,x1:x2].mean()),key)
+        for key,x1,y1,x2,y2 in tab_boxes),reverse=True)
+    return_box=gray[0:50,1750:1845]
+    bright=float(np.percentile(return_box,95))
+    edge=float(np.mean(cv2.Canny(return_box,50,130)>0))
+    tab_gap=ranked[0][0]-ranked[1][0]
+    if bright>=130. and edge>=.07 and ranked[0][0]>=95. and tab_gap>=25.:
+        self.last_interface=ranked[0][1]
+        self.last_menu_features=dict(interface=ranked[0][1],
+            interface_score=ranked[0][0]/255.,tab_scores=tab_scores,
+            tab_match=best_tab,tab_brightness=ranked[0][0],tab_gap=tab_gap,
+            menu_return=menu_return,console=console,inventory=1.,pause=0.,
+            extraction_banner=extraction_banner,skipped_for_combat=False)
+        return 1.
     if menu_return>=.70:
         self.last_interface='U'
         self.last_menu_features=dict(interface='U',
@@ -237,15 +312,21 @@ def menu_score_top(self, top, gray=None):
     pause=0.
     if combat<.30:
         small=cv2.resize(gray,self.home_small,interpolation=cv2.INTER_AREA)
-        for variant in self.home_variants:
-            if (variant.shape[0]>small.shape[0]
-                    or variant.shape[1]>small.shape[1]):
-                continue
-            pause=max(pause,float(cv2.minMaxLoc(
-                cv2.matchTemplate(small,variant,cv2.TM_CCOEFF_NORMED))[1]))
+        for family in self.home_families:
+            for variant in family:
+                if (variant.shape[0]>small.shape[0]
+                        or variant.shape[1]>small.shape[1]):
+                    continue
+                pause=max(pause,float(cv2.minMaxLoc(
+                    cv2.matchTemplate(small,variant,
+                        cv2.TM_CCOEFF_NORMED))[1]))
+                if pause>=.85:
+                    break
             if pause>=.85:
                 break
-        if pause>=.62:
+        # Five map templates make the family max safer than the old single
+        # template, so the C threshold can rise from .62 to .70.
+        if pause>=.70:
             self.last_interface='C'
             self.last_menu_features=dict(interface='C',
                 interface_score=pause,home_score=pause,console=console,

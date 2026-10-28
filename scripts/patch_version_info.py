@@ -10,7 +10,7 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 PATH = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "base" / "base_branded.exe"
 APP = "从零开始的塔科夫生活"
-VERSION = "1.2.0.3"
+VERSION = "1.4.1.0"
 # The PE version block has a fixed byte budget; the version string is
 # MAJOR.MINOR.PATCH.BUILD, with no pre-release suffix.
 DISPLAY_VERSION = VERSION
@@ -68,9 +68,22 @@ def find_version():
 entry_off, ver_rva, ver_size, codepage = find_version()
 ver_off = rva_to_off(ver_rva)
 old = bytes(data[ver_off:ver_off + ver_size])
-fixed = old[40:40 + 52]
+fixed = bytearray(old[40:40 + 52])
 var_info = old[ver_size - 68:ver_size]
 assert len(fixed) == 52 and len(var_info) == 68
+
+# VS_FIXEDFILEINFO carries the numeric version separately from the strings.
+_major, _minor, _patch, _build = (int(x) for x in VERSION.split("."))
+struct.pack_into(
+    "<IIII",
+    fixed,
+    8,
+    (_major << 16) | _minor,
+    (_patch << 16) | _build,
+    (_major << 16) | _minor,
+    (_patch << 16) | _build,
+)
+fixed = bytes(fixed)
 
 
 def wstr(s):

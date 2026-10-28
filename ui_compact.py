@@ -537,7 +537,7 @@ TEXTS = {
     "zh": {
         "lang_button": "EN",
         "release_suffix": f" · {RELEASE_NAME}",
-        "about_version": " · V1.2.0.3",
+        "about_version": " · V1.4.1.0",
         "tab_prep": "战前准备",
         "tab_advanced": "进阶设置",
         "tab_diag": "日志诊断",
@@ -636,11 +636,30 @@ TEXTS = {
         "hotkey_available": "{key} 可用",
         "hotkey_occupied": "{key} 已被其他程序占用",
         "notice_tip": "{key} 开启/关闭",
+        "score_readout": "得分 {code} {score}",
+        "score_badge": "SC {score}",
+        "score_combat": "战斗",
+        "score_body": "人形",
+        "score_hotbar": "快捷栏",
+        "score_title": "撤离标题",
+        "score_green": "绿色",
+        "score_home": "主页面",
+        "score_tab": "页签",
+        "score_second": "次高",
+        "score_tab_brightness": "页签亮度",
+        "score_tab_gap": "亮度差",
+        "score_console": "控制台",
+        "score_settings": "设置",
+        "score_end": "撤离结束",
+        "score_return": "返回",
+        "score_blackout": "黑屏",
+        "score_none": "无匹配",
+        "score_waiting": "等待首帧",
     },
     "en": {
         "lang_button": "中",
         "release_suffix": f" · {RELEASE_NAME_EN}",
-        "about_version": " · V1.2.0.3",
+        "about_version": " · V1.4.1.0",
         "tab_prep": "Prep",
         "tab_advanced": "Advanced",
         "tab_diag": "Diagnostics",
@@ -739,6 +758,25 @@ TEXTS = {
         "hotkey_available": "{key} is available",
         "hotkey_occupied": "{key} is used by another program",
         "notice_tip": "{key} on/off",
+        "score_readout": "Score {code} {score}",
+        "score_badge": "SC {score}",
+        "score_combat": "Combat",
+        "score_body": "Body",
+        "score_hotbar": "Hotbar",
+        "score_title": "Extract title",
+        "score_green": "Green",
+        "score_home": "Home",
+        "score_tab": "Tab",
+        "score_second": "2nd",
+        "score_tab_brightness": "Tab brightness",
+        "score_tab_gap": "Brightness gap",
+        "score_console": "Console",
+        "score_settings": "Settings",
+        "score_end": "Extract end",
+        "score_return": "Return",
+        "score_blackout": "Blackout",
+        "score_none": "No match",
+        "score_waiting": "Waiting for frame",
     },
 }
 
@@ -1076,6 +1114,7 @@ class PrimaryUI:
         self._configure_style()
         self._build()
         self._build_overlay()
+        self._build_score_overlay()
         self._apply_resolution()
         self._apply_profile(self._profile_key, initial=True)
         self._last_sound = self.exit_sound_var.get()
@@ -1144,7 +1183,6 @@ class PrimaryUI:
         for source_name, target_name in (
             ("state_head", "state_head_var"),
             ("status", "status_var"),
-            ("scores", "scores_var"),
             ("bottom_status", "bottom_status_var"),
             ("sound_hint", "sound_hint_var"),
             ("key_hint", "key_hint_var"),
@@ -1161,6 +1199,12 @@ class PrimaryUI:
 
             source.trace_add("write", sync)
             self._trace_callbacks.append(sync)
+        # Scores are rendered by _refresh: test mode needs the per-page score
+        # basis straight from the detector, while normal mode keeps the
+        # monitor's own readout.  A trace bridge here would fight that update.
+        self.scores_var = tk.StringVar(
+            master=self.root, value=self._tr(self.app.scores.get())
+        )
 
     def _apply_test_mode_default(self):
         """New installs start with test mode off; an explicit saved choice wins."""
@@ -1406,6 +1450,38 @@ class PrimaryUI:
         except Exception:
             self._overlay = None
 
+    def _build_score_overlay(self):
+        """Create the second badge that shows the test-mode score value."""
+        try:
+            overlay = tk.Toplevel(self.root)
+            overlay.overrideredirect(True)
+            overlay.attributes("-topmost", True)
+            try:
+                overlay.attributes("-alpha", 0.94)
+            except tk.TclError:
+                pass
+            panel = tk.Frame(
+                overlay, bg=CARD, highlightthickness=1,
+                highlightbackground=BUTTON,
+            )
+            panel.pack(fill="both", expand=True)
+            label = tk.Label(
+                panel, text="", bg=CARD, fg=ACCENT,
+                font=(FONT, 9, "bold"), padx=8, pady=2,
+            )
+            label.pack()
+            overlay.withdraw()
+            overlay.update_idletasks()
+            self._score_overlay = overlay
+            self._score_overlay_panel = panel
+            self.score_overlay_label = label
+            self._overlay_score_shown = False
+            self._overlay_score_text = None
+            self._score_overlay_size = None
+            self._make_overlay_click_through(overlay)
+        except Exception:
+            self._score_overlay = None
+
     @staticmethod
     def _overlay_work_area(window):
         """Return the full primary screen bounds, ignoring the taskbar.
@@ -1417,37 +1493,114 @@ class PrimaryUI:
         return 0, 0, window.winfo_screenwidth(), window.winfo_screenheight()
 
     def _place_overlay(self):
+        """Position the interface badge and, in test mode, the score badge.
+
+        The two badges are separate top-level windows of the same style and the
+        score badge is always a size smaller.  Top anchors put the interface
+        badge on top with the score badge below; bottom anchors mirror that,
+        keeping the interface badge on the screen edge with the score badge
+        above it.  Both cases use a 6 px gap.
+        """
         overlay = getattr(self, "_overlay", None)
         if overlay is None:
             return
+        score_overlay = getattr(self, "_score_overlay", None)
         try:
             position = self.overlay_position_key
             if position == "off":
                 overlay.withdraw()
+                if score_overlay is not None:
+                    score_overlay.withdraw()
+                self._score_overlay_size = None
                 return
-            if overlay.state() == "withdrawn":
-                overlay.deiconify()
+            show_score = (
+                score_overlay is not None
+                and bool(getattr(self, "_overlay_score_shown", False))
+            )
             overlay.update_idletasks()
             width = max(96, overlay.winfo_reqwidth())
             height = overlay.winfo_reqheight()
+            if show_score:
+                # The score badge is intentionally a size smaller than the
+                # interface badge, so each window keeps its own width.
+                score_overlay.update_idletasks()
+                s_width = max(64, score_overlay.winfo_reqwidth())
+                s_height = score_overlay.winfo_reqheight()
+            else:
+                s_width = s_height = 0
             left, top, right, bottom = self._overlay_work_area(overlay)
             margin = 18
-            if position in ("top_center", "bottom_center"):
-                x = left + (right - left - width) // 2
-            elif position in ("top_left", "bottom_left"):
-                x = left + margin
-            else:
-                x = right - width - margin
-            if position in ("top_center", "top_left", "top_right"):
+            gap = 6
+
+            def aligned_x(w):
+                if position in ("top_center", "bottom_center"):
+                    x = left + (right - left - w) // 2
+                elif position in ("top_left", "bottom_left"):
+                    x = left + margin
+                else:
+                    x = right - w - margin
+                return max(left, min(x, right - w))
+
+            top_anchor = position in ("top_center", "top_left", "top_right")
+            if top_anchor:
                 y = top + margin
+                score_y = y + height + gap
             else:
-                y = bottom - height - margin
-            x = max(left, min(x, right - width))
+                # Bottom anchors keep the interface badge on the screen edge
+                # and put the score badge above it.
+                y = bottom - margin - height
+                score_y = y - gap - s_height
             y = max(top, min(y, bottom - height))
-            overlay.geometry(f"{width}x{height}+{x}+{y}")
+            if show_score:
+                score_y = max(top, min(score_y, bottom - s_height))
+
+            overlay.geometry(f"{width}x{height}+{aligned_x(width)}+{y}")
+            if show_score:
+                score_overlay.geometry(
+                    f"{s_width}x{s_height}+{aligned_x(s_width)}+{score_y}"
+                )
+                score_overlay.deiconify()
+                self._score_overlay_size = (s_width, s_height)
+            elif score_overlay is not None:
+                score_overlay.withdraw()
+                self._score_overlay_size = None
+            overlay.deiconify()
             overlay.update_idletasks()
+            self._overlay_geometry_size = (width, height)
         except Exception:
             pass
+
+    def _set_overlay_score(self, text):
+        """Show, update or hide the separate test-mode score badge."""
+        overlay = getattr(self, "_score_overlay", None)
+        label = getattr(self, "score_overlay_label", None)
+        if overlay is None or label is None:
+            return
+        if text == getattr(self, "_overlay_score_text", None):
+            return
+        want = bool(text)
+        shown = bool(getattr(self, "_overlay_score_shown", False))
+        try:
+            if want:
+                label.configure(text=text)
+        except tk.TclError:
+            return
+        self._overlay_score_text = text
+        if want != shown:
+            self._overlay_score_shown = want
+            self._place_overlay()
+            return
+        if not want:
+            return
+        try:
+            # The value width can change between frames; only reposition when
+            # the score badge's requested size actually changed.
+            overlay.update_idletasks()
+            size = (max(64, overlay.winfo_reqwidth()), overlay.winfo_reqheight())
+        except tk.TclError:
+            return
+        if size != getattr(self, "_score_overlay_size", None):
+            self._place_overlay()
 
     def _change_overlay_position(self, event=None):
         self.overlay_position_key = self._overlay_position_from_text(
@@ -1528,28 +1681,38 @@ class PrimaryUI:
 
     def _assert_overlay_topmost(self):
         """Reassert topmost after the game or another window changes z-order."""
-        overlay = getattr(self, "_overlay", None)
-        if overlay is None or self.overlay_position_key == "off":
+        if self.overlay_position_key == "off":
             return
-        try:
-            if not overlay.winfo_exists() or overlay.state() == "withdrawn":
-                return
-            overlay.attributes("-topmost", True)
-            if sys.platform != "win32":
-                return
-            user32 = ctypes.WinDLL("user32", use_last_error=True)
-            user32.SetWindowPos.argtypes = (
-                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int,
-                ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint,
-            )
-            user32.SetWindowPos.restype = ctypes.c_bool
-            hwnd = PrimaryUI._overlay_wrapper(overlay)
-            user32.SetWindowPos(
-                hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0,
-                0x0001 | 0x0002 | 0x0010 | 0x0040 | 0x0200,
-            )
-        except Exception:
-            pass
+        user32 = None
+        if sys.platform == "win32":
+            try:
+                user32 = ctypes.WinDLL("user32", use_last_error=True)
+                user32.SetWindowPos.argtypes = (
+                    ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int,
+                    ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint,
+                )
+                user32.SetWindowPos.restype = ctypes.c_bool
+            except Exception:
+                user32 = None
+        for overlay in (
+            getattr(self, "_overlay", None),
+            getattr(self, "_score_overlay", None),
+        ):
+            if overlay is None:
+                continue
+            try:
+                if not overlay.winfo_exists() or overlay.state() == "withdrawn":
+                    continue
+                overlay.attributes("-topmost", True)
+                if user32 is None:
+                    continue
+                hwnd = PrimaryUI._overlay_wrapper(overlay)
+                user32.SetWindowPos(
+                    hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0,
+                    0x0001 | 0x0002 | 0x0010 | 0x0040 | 0x0200,
+                )
+            except Exception:
+                pass
 
     @staticmethod
     def _block_mouse_wheel(event=None):
@@ -2104,10 +2267,11 @@ class PrimaryUI:
             status, textvariable=self.status_var, bg=CARD, fg=MUTED,
             font=(FONT, 8), anchor="w", justify="left", wraplength=410,
         ).pack(fill="x", pady=(2, 0))
-        tk.Label(
+        self.scores_label = tk.Label(
             status, textvariable=self.scores_var, bg=CARD, fg=MUTED,
             font=(FONT, 7), anchor="w", justify="left", wraplength=410,
-        ).pack(fill="x", pady=(2, 0))
+        )
+        self.scores_label.pack(fill="x", pady=(2, 0))
 
         self._separator(status)
         self.mode_check = tk.Checkbutton(
@@ -2860,6 +3024,111 @@ class PrimaryUI:
             return ACCENT
         return MUTED
 
+    @staticmethod
+    def _score_value(value):
+        try:
+            return max(0.0, min(1.0, float(value)))
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _score_summary(self, detector, iface):
+        """Return the numeric score and detail fragments behind a verdict."""
+        features = getattr(detector, "last_features", None) or {}
+        menu = getattr(detector, "last_menu_features", None) or {}
+        extraction = getattr(detector, "last_extraction", None) or {}
+        value = self._score_value
+
+        def num(raw):
+            return f"{value(raw):.3f}"
+
+        def raw_number(raw):
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                return 0.0
+
+        def label(key):
+            return self._t("score_" + key)
+
+        if iface == "A":
+            score = value(features.get("combat_score"))
+            details = (
+                f"{label('body')} {num(features.get('body_shape'))}",
+                f"{label('hotbar')} {num(features.get('hotbar'))}",
+            )
+        elif iface == "B":
+            score = value(extraction.get("title_score"))
+            details = (
+                f"{label('title')} {num(score)}",
+                f"{label('green')} {value(extraction.get('green_fraction')):.2f}",
+            )
+        elif iface == "C":
+            score = value(menu.get("home_score"))
+            details = (f"{label('home')} {num(score)}",)
+        elif iface in ("D", "E", "F", "G", "H", "I", "J"):
+            if menu.get("tab_brightness") is not None:
+                brightness = max(0.0, raw_number(menu.get("tab_brightness")))
+                gap = max(0.0, raw_number(menu.get("tab_gap")))
+                score = min(1.0, brightness / 255.)
+                details = (
+                    f"{label('tab_brightness')} {brightness:.0f}/255",
+                    f"{label('tab_gap')} {gap:.0f}",
+                )
+            else:
+                score = value(menu.get("interface_score"))
+                second = 0.0
+                tab_scores = menu.get("tab_scores") or {}
+                if isinstance(tab_scores, dict):
+                    ordered = sorted(
+                        (value(item) for item in tab_scores.values()), reverse=True
+                    )
+                    second = ordered[1] if len(ordered) > 1 else 0.0
+                details = (
+                    f"{label('tab')} {num(score)}",
+                    f"{label('second')} {num(second)}",
+                )
+        elif iface == "K":
+            score = value(menu.get("console"))
+            details = (f"{label('console')} {num(score)}",)
+        elif iface == "L":
+            score = value(menu.get("settings"))
+            details = (f"{label('settings')} {num(score)}",)
+        elif iface == "M":
+            score = value(menu.get("end_score"))
+            details = (f"{label('end')} {num(score)}",)
+        elif iface == "U":
+            score = value(menu.get("menu_return"))
+            details = (f"{label('return')} {num(score)}",)
+        elif iface == "Z":
+            score = 1.0
+            details = (label("blackout"),)
+        else:
+            score = value(menu.get("interface_score"))
+            if not features and not menu:
+                details = (label("waiting"),)
+            else:
+                tab_scores = menu.get("tab_scores") or {}
+                best_tab = 0.0
+                if isinstance(tab_scores, dict) and tab_scores:
+                    best_tab = max(value(item) for item in tab_scores.values())
+                details = (
+                    label("none"),
+                    f"{label('combat')} {num(features.get('combat_score'))}",
+                    f"{label('tab')} {num(best_tab)}",
+                )
+        return score, details
+
+    def _score_readout(self, detector, iface):
+        """Describe the score that produced the current interface verdict."""
+        score, details = self._score_summary(detector, iface)
+        text = self._t("score_readout").format(code=iface, score=f"{score:.3f}")
+        return text + " · " + " · ".join(details)
+
+    def _score_badge(self, detector, iface):
+        """Return the compact value shown in the separate score badge."""
+        score, _details = self._score_summary(detector, iface)
+        return self._t("score_badge").format(score=f"{score:.3f}")
+
     def _refresh(self):
         if getattr(self.app, "closed", False):
             return
@@ -2882,6 +3151,8 @@ class PrimaryUI:
             badge_bg, badge_fg = BUTTON, MUTED
             overlay_fg = MUTED
         self.mode_badge.configure(text=code, bg=badge_bg, fg=badge_fg)
+        score_text = self._score_readout(detector, iface) if running and dry else ""
+        score_badge = self._score_badge(detector, iface) if running and dry else ""
         overlay = getattr(self, "_overlay", None)
         if overlay is not None:
             try:
@@ -2889,6 +3160,15 @@ class PrimaryUI:
                 self._overlay_panel.configure(highlightbackground=overlay_fg)
             except tk.TclError:
                 pass
+            self._set_overlay_score(score_badge)
+            if getattr(self, "_score_overlay", None) is not None:
+                try:
+                    self.score_overlay_label.configure(fg=overlay_fg)
+                    self._score_overlay_panel.configure(
+                        highlightbackground=overlay_fg
+                    )
+                except tk.TclError:
+                    pass
         now = time.monotonic()
         if now - getattr(self, "_overlay_top_at", 0.0) >= 0.5:
             self._overlay_top_at = now
@@ -2900,6 +3180,14 @@ class PrimaryUI:
                 self.interface_var.set(f"当前界面：{code} · {name[0]}")
             else:
                 self.interface_var.set(f"Current interface: {code} · {name[1]}")
+
+        if hasattr(self, "scores_var"):
+            if score_text:
+                self.scores_var.set(score_text)
+            else:
+                self.scores_var.set(self._tr(self.app.scores.get()))
+            if hasattr(self, "scores_label"):
+                self.scores_label.configure(fg=ACCENT if score_text else MUTED)
 
         if self._hud_ready():
             self.mode_badge2.configure(text=self._t("ready"), bg=GREEN, fg=BG)

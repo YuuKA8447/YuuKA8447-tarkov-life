@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / "_V1.2.0.3_full.exe"
-DST = Path(sys.argv[2]) if len(sys.argv) > 2 else BASE / "build" / "从零开始的塔科夫生活_V1.2.0.3.exe"
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / "_V1.4.1.0_full.exe"
+DST = Path(sys.argv[2]) if len(sys.argv) > 2 else BASE / "build" / "从零开始的塔科夫生活_V1.4.1.0.exe"
 COOKIE = b"MEI\x0c\x0b\x0a\x0b\x0e"
 
 UNUSED_ROOT_ASSETS = {
@@ -142,11 +142,15 @@ def main() -> int:
         name for name in order
         if name.startswith("PIL\\")
     }
+    # The original PyInstaller base ships all 78 retired entries; the V1.3.2.2
+    # rebuilt base has already dropped them, so a match count of 0 is the
+    # steady state. Only a half-trimmed base is a real mismatch.
+    present = remove & set(by_name)
     missing = sorted(remove - set(by_name))
-    if missing:
-        raise RuntimeError(f"待删除条目不存在: {missing}")
-    if len(remove) != 78:
-        raise RuntimeError(f"待删除条目数量异常: {len(remove)}，预期 78")
+    if missing and present:
+        raise RuntimeError(f"待删除条目部分缺失（基底不一致）: {missing}")
+    if present and len(present) != 78:
+        raise RuntimeError(f"待删除条目数量异常: {len(present)}，预期 78")
     if set(REQUIRED_ASSETS) - set(by_name):
         raise RuntimeError(
             f"源 EXE 缺少必需资源: {sorted(set(REQUIRED_ASSETS) - set(by_name))}"
@@ -209,10 +213,10 @@ def main() -> int:
     if set(REQUIRED_ASSETS) - set(out_order):
         raise RuntimeError("输出缺少必需资源")
 
-    removed_bytes = sum(by_name[name]["cmprsd"] for name in remove)
+    removed_bytes = sum(by_name[name]["cmprsd"] for name in present)
     print(f"source={SRC}")
     print(f"output={DST}")
-    print(f"entries {len(entries)} -> {len(out_entries)} (removed {len(remove)})")
+    print(f"entries {len(entries)} -> {len(out_entries)} (removed {len(present)})")
     print(f"removed_compressed_bytes={removed_bytes}")
     print(f"size {len(buf)} -> {len(out)} (saved {len(buf) - len(out)})")
     print(f"sha256={hashlib.sha256(out).hexdigest().upper()}")

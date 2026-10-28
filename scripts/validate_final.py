@@ -9,7 +9,7 @@ import zlib
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-EXE = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / "从零开始的塔科夫生活_V1.2.0.3.exe"
+EXE = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / "从零开始的塔科夫生活_V1.4.1.0.exe"
 COOKIE = b"MEI\x0c\x0b\x0a\x0b\x0e"
 
 REQUIRED_ASSETS = {
@@ -60,7 +60,8 @@ REMOVED_ASSETS = {
 
 EMBEDDED_TEMPLATES = {
     "hud_hotbar", "hud_body", "hud_body_169", "extract_B", "extract_found",
-    "end_M", "console_K", "pause_C", "menu_return", "settings_L",
+    "end_M", "console_K", "pause_C", "pause_C_lab", "pause_C_factory",
+    "pause_C_nameless", "pause_C_forest", "menu_return", "settings_L",
     "tabs_D", "tabs_E", "tabs_F", "tabs_G", "tabs_H", "tabs_I", "tabs_J",
 }
 
@@ -155,9 +156,19 @@ detector_blob = zlib.decompress(pyz[pyz_toc["detector"][1]:
 try:
     import cv2  # noqa: F401
 except ImportError:
-    cv2_site = Path(os.environ.get("TEMP", "")) / "tarkov_v129_cv2" / "site"
-    if cv2_site.is_dir():
-        sys.path.insert(0, str(cv2_site))
+    candidates = []
+    env_site = os.environ.get("TARKOV_CV2_SITE")
+    if env_site:
+        candidates.append(Path(env_site))
+    temp_site = os.environ.get("TEMP")
+    if temp_site:
+        candidates.append(Path(temp_site) / "tarkov_v129_cv2" / "site")
+    candidates.append(BASE / "build" / "_offline_deps")
+    for candidate in candidates:
+        if candidate.is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+    import cv2  # noqa: F401
 namespace = {"__name__": "detector", "__file__": str(BASE / "detector.py")}
 timer_stub = types.ModuleType("timer_digits")
 timer_stub.TimerDigits = type(

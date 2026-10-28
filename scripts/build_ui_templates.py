@@ -35,23 +35,21 @@ OUT = BASE / "assets" / "interface"
 # Source screenshots.  Folder letters follow the user's UI-identification set;
 # the detector keys follow the application's established interface codes.
 SOURCES = {
-    "hud_1": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1600 16：10/战斗HUD画面1.png",
-    "hud_2": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1600 16：10/战斗HUD画面2.png",
-    "hud_169": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1440 16：9"
-               / "2026-10-25[15-04]_69.02, 2.00, -68.86_0.04727, 0.04666, "
-                 "-0.00221, 0.99779_15.47 (0).png",
-    "extract": SRC / "画面识别 B 撤离点,战斗HUD/测试图/撤离点测试图.png",
-    "end_m": SRC / "画面识别 M 撤离结束/测试图/测试图1.png",
-    "pause": SRC / "画面识别 C 二级菜单,游戏主页面/测试图/测试画面.png",
-    "inventory": SRC / "画面识别 D 二级菜单,背包界面/测试图/测试画面1.png",
-    "overview": SRC / "画面识别 E 二级菜单,总览/测试图/测试图1.png",
-    "health": SRC / "画面识别 F 二级菜单,健康/测试图/测试图.png",
-    "skills": SRC / "画面识别 G 二级菜单,成就/测试图/测试图.png",
-    "map": SRC / "测试画面 H 二级菜单,地图/测试图/测试图.png",
-    "quests": SRC / "画面识别 I 二级菜单,任务/测试图/测试图.png",
-    "achievements": SRC / "画面识别 J 二级菜单,成就/测试图/联想截图_20261022143802.png",
-    "console": SRC / "画面识别 K 二级菜单,控制台/测试图/测试图.png",
-    "settings": SRC / "画面识别 L 三级菜单,设置/测试图/测试图1.png",
+    "hud_1": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1600 16：10/A39_0.887.png",
+    "hud_2": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1600 16：10/A40_0.929.png",
+    "hud_169": SRC / "画面识别 A 入场界面,战斗HUD/测试图2560 1440 16：9/A1_0.847.png",
+    "extract": SRC / "画面识别 B 撤离点,战斗HUD/测试图/B1_1.000.png",
+    "end_m": SRC / "画面识别 M 撤离结束/测试图/M1_1.000.png",
+    "pause": SRC / "画面识别 C 二级菜单,游戏主页面/测试图/C4_1.000.png",
+    "inventory": SRC / "画面识别 D 二级菜单,背包界面/测试图/D3_1.000.png",
+    "overview": SRC / "画面识别 E 二级菜单,总览/测试图/E1_1.000.png",
+    "health": SRC / "画面识别 F 二级菜单,健康/测试图/F1_1.000.png",
+    "skills": SRC / "画面识别 G 二级菜单,成就/测试图/G1_1.000.png",
+    "map": SRC / "测试画面 H 二级菜单,地图/测试图/H1_1.000.png",
+    "quests": SRC / "画面识别 I 二级菜单,任务/测试图/I1_1.000.png",
+    "achievements": SRC / "画面识别 J 二级菜单,成就/测试图/J1_1.000.png",
+    "console": SRC / "画面识别 K 二级菜单,控制台/测试图/K1_1.000.png",
+    "settings": SRC / "画面识别 L 三级菜单,设置/测试图/L1_1.000.png",
 }
 
 # (template name, source key, crop box, match box, margin, kind)
@@ -90,6 +88,37 @@ DIRECT_TEMPLATES = [
         "extract_found",
         SRC / "画面识别 B 撤离点,战斗HUD/找到撤离点_黑名单(不参与识别).png",
         (1200, 0, 1820, 110),
+        0,
+        "gray",
+    ),
+    # Per-map C-page logo templates extracted into ui识别 following the
+    # 识别特征N.png naming rule.  The pause background is map scenery, so a
+    # single template cannot cover every map's position and scale.
+    (
+        "pause_C_lab",
+        SRC / "画面识别 C 二级菜单,游戏主页面/识别特征3.png",
+        (0, 0, 1920, 240),
+        0,
+        "gray",
+    ),
+    (
+        "pause_C_factory",
+        SRC / "画面识别 C 二级菜单,游戏主页面/识别特征4.png",
+        (0, 0, 1920, 240),
+        0,
+        "gray",
+    ),
+    (
+        "pause_C_nameless",
+        SRC / "画面识别 C 二级菜单,游戏主页面/识别特征5.png",
+        (0, 0, 1920, 240),
+        0,
+        "gray",
+    ),
+    (
+        "pause_C_forest",
+        SRC / "画面识别 C 二级菜单,游戏主页面/识别特征6.png",
+        (0, 0, 1920, 240),
         0,
         "gray",
     ),
