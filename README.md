@@ -24,9 +24,9 @@
 
 ## 下载
 
-> 本版 V1.4.2.0 为本地构建，GitHub Release 仍为 `v1.4.1.0`；下表链接在上传后生效。
+> 最新发布为 V1.4.2.0，下表资产已上传并校验。
 
-前往 [Releases](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/latest) 下载发布版 V1.4.1.0（GitHub 现有资产）。
+前往 [Releases](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/latest) 下载最新发布版 V1.4.2.0。
 
 | 文件 | 说明 |
 | --- | --- |
