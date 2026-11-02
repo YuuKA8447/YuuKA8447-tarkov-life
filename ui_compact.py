@@ -38,6 +38,7 @@ def _startup_log(message):
         with (folder / "startup.log").open("a", encoding="utf-8") as handle:
             handle.write(f"{stamp} pid={os.getpid()} {message}\n")
     except Exception:
+        # The log writer cannot log its own failure; _swallow would recurse.
         pass
 
 
@@ -56,8 +57,28 @@ def _log_uncaught(exc_type, exc, tb):
     _startup_log("uncaught: " + _format_exception(exc_type, exc, tb))
     sys.__excepthook__(exc_type, exc, tb)
 
-
 sys.excepthook = _log_uncaught
+
+
+# Callback failures used to be swallowed with a bare `pass`, so a broken path
+# looked identical to a path that was never reached.  Record each one once per
+# window per context: enough to diagnose, quiet enough to stay in a log.
+_SWALLOW_WINDOW = 10.0
+_SWALLOW_REPEAT_LIMIT = 3
+_swallowed = {}
+
+
+def _swallow(context, exc):
+    now = time.monotonic()
+    seen, first_at, logged = _swallowed.get(context, (0, now, 0))
+    seen += 1
+    if now - first_at > _SWALLOW_WINDOW:
+        first_at, logged = now, 0
+    _swallowed[context] = (seen, first_at, logged)
+    if logged >= _SWALLOW_REPEAT_LIMIT:
+        return
+    _swallowed[context] = (seen, first_at, logged + 1)
+    _startup_log(f"swallowed in {context}: {type(exc).__name__}: {exc}")
 
 
 def _ready_token():
@@ -413,13 +434,13 @@ def _install_force_exit(app_type):
                     force_exit=True,
                     detail=detail,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("observe_exit:436", exc)
             try:
                 if token == self.token and not self.active and not self.arming:
                     self.ui.put(("exit_check", (token, message)))
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("observe_exit:441", exc)
             if handle and kernel32 is not None:
                 kernel32.CloseHandle(handle)
             return
@@ -437,8 +458,8 @@ def _install_force_exit(app_type):
                         ),
                         force_exit=True,
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _swallow("observe_exit:460", exc)
                 try:
                     if token == self.token:
                         self.ui.put(
@@ -450,8 +471,8 @@ def _install_force_exit(app_type):
                                 ),
                             )
                         )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _swallow("observe_exit:473", exc)
                 result = kernel32.WaitForSingleObject(
                     handle, (timeout - 3) * 1000
                 )
@@ -492,13 +513,13 @@ def _install_force_exit(app_type):
                 force_exit=True,
                 detail=detail,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("observe_exit:515", exc)
         try:
             if token == self.token and not self.active and not self.arming:
                 self.ui.put(("exit_check", (token, message)))
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("observe_exit:520", exc)
         if handle and kernel32 is not None:
             kernel32.CloseHandle(handle)
 
@@ -537,7 +558,7 @@ TEXTS = {
     "zh": {
         "lang_button": "EN",
         "release_suffix": f" · {RELEASE_NAME}",
-        "about_version": " · V1.4.1.0",
+        "about_version": " · V1.4.2.0",
         "tab_prep": "战前准备",
         "tab_advanced": "进阶设置",
         "tab_diag": "日志诊断",
@@ -659,7 +680,7 @@ TEXTS = {
     "en": {
         "lang_button": "中",
         "release_suffix": f" · {RELEASE_NAME_EN}",
-        "about_version": " · V1.4.1.0",
+        "about_version": " · V1.4.2.0",
         "tab_prep": "Prep",
         "tab_advanced": "Advanced",
         "tab_diag": "Diagnostics",
@@ -1090,6 +1111,9 @@ class PrimaryUI:
         self._tick = 0
         self._log_cache = ""
         self._last_sound = None
+        # Last values handed to the widgets in _refresh; the loop runs every
+        # 150 ms and most frames change nothing, so only diffs are applied.
+        self._render_cache = {}
         self._current_tab = 0
         self.language = self._load_language()
         self.overlay_position_key = self._load_overlay_position()
@@ -1138,8 +1162,8 @@ class PrimaryUI:
         values = {}
         try:
             values = json.loads(Path(self.app.config_path).read_text("utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_load_overlay_position:1161", exc)
         if not isinstance(values, dict):
             values = {}
         value = str(values.get("overlay_position", "top_right"))
@@ -1219,8 +1243,8 @@ class PrimaryUI:
         saved = preferences.get("dry_run")
         try:
             self.app.dry.set(saved if isinstance(saved, bool) else False)
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_apply_test_mode_default:1242", exc)
 
     def _profile_name(self, key):
         name = PROFILES.get(key, PROFILES[DEFAULT_PROFILE])["name"]
@@ -1253,29 +1277,30 @@ class PrimaryUI:
             self.audio_combo.configure(
                 values=tuple(self._sound_display(item) for item in actual)
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_update_sound_choices:1276", exc)
 
     def _toggle_language(self):
         self.language = "en" if self.language == "zh" else "zh"
         self._retranslate()
+        self._force_refresh()
         try:
             self.app.write_preferences(language=self.language)
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_toggle_language:1284", exc)
 
     def _retranslate(self):
         self.lang_button.configure(text=self._t("lang_button"))
         for widget, option, key in self._text_bindings:
             try:
                 widget.configure(**{option: self._t(key)})
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_retranslate:1292", exc)
         for source, target in self._bridges:
             try:
                 target.set(self._tr(source.get()))
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_retranslate:1297", exc)
         if hasattr(self, "auto_feedback"):
             self.auto_feedback_display.set(self._tr(self.auto_feedback.get()))
         if hasattr(self, "auto_button_text"):
@@ -1322,8 +1347,8 @@ class PrimaryUI:
         style = ttk.Style(self.root)
         try:
             style.theme_use("clam")
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_configure_style:1345", exc)
         style.configure(
             "Compact.TCombobox",
             fieldbackground=INPUT,
@@ -1427,8 +1452,8 @@ class PrimaryUI:
             overlay.attributes("-topmost", True)
             try:
                 overlay.attributes("-alpha", 0.94)
-            except tk.TclError:
-                pass
+            except tk.TclError as exc:
+                _swallow("_build_overlay:1450", exc)
             panel = tk.Frame(
                 overlay, bg=CARD, highlightthickness=1,
                 highlightbackground=BUTTON,
@@ -1458,8 +1483,8 @@ class PrimaryUI:
             overlay.attributes("-topmost", True)
             try:
                 overlay.attributes("-alpha", 0.94)
-            except tk.TclError:
-                pass
+            except tk.TclError as exc:
+                _swallow("_build_score_overlay:1481", exc)
             panel = tk.Frame(
                 overlay, bg=CARD, highlightthickness=1,
                 highlightbackground=BUTTON,
@@ -1567,8 +1592,8 @@ class PrimaryUI:
             overlay.deiconify()
             overlay.update_idletasks()
             self._overlay_geometry_size = (width, height)
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_place_overlay:1590", exc)
 
     def _set_overlay_score(self, text):
         """Show, update or hide the separate test-mode score badge."""
@@ -1611,8 +1636,8 @@ class PrimaryUI:
             self.app.write_preferences(
                 overlay_position=self.overlay_position_key
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_change_overlay_position:1634", exc)
 
     @staticmethod
     def _overlay_wrapper(window):
@@ -1676,8 +1701,8 @@ class PrimaryUI:
                 hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0,
                 0x0001 | 0x0002 | 0x0010 | 0x0200,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_make_overlay_click_through:1699", exc)
 
     def _assert_overlay_topmost(self):
         """Reassert topmost after the game or another window changes z-order."""
@@ -1711,8 +1736,8 @@ class PrimaryUI:
                     hwnd, ctypes.c_void_p(-1), 0, 0, 0, 0,
                     0x0001 | 0x0002 | 0x0010 | 0x0040 | 0x0200,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_assert_overlay_topmost:1734", exc)
 
     @staticmethod
     def _block_mouse_wheel(event=None):
@@ -1829,6 +1854,7 @@ class PrimaryUI:
             self._configure_style()
             self._retint(mapping)
             self._show_tab(self._current_tab)
+            self._force_refresh()
 
         name = self._profile_name(key)
         self.root.title(f"{name}{self._t('release_suffix')}")
@@ -1860,8 +1886,8 @@ class PrimaryUI:
                 self.root.iconbitmap(default=str(path))
                 self.root.iconbitmap(str(path))
                 tk_ok = True
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_apply_icon:1883", exc)
             win_ok = self._apply_win_icon(path)
             if tk_ok or win_ok:
                 return
@@ -1965,12 +1991,12 @@ class PrimaryUI:
             if hicon:
                 try:
                     data.hIcon = old_data_icon
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _swallow("_apply_tray_icon:1988", exc)
                 try:
                     user32.DestroyIcon(hicon)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    _swallow("_apply_tray_icon:1992", exc)
             return False
 
     def _apply_notice_tip(self, name):
@@ -1984,8 +2010,8 @@ class PrimaryUI:
             data.szTip = f"{name} · {self._t('notice_tip').format(key=key)}"
             data.uFlags = 4
             shell.Shell_NotifyIconW(1, ctypes.byref(data))
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_apply_notice_tip:2007", exc)
 
     def _admin_notice(self):
         try:
@@ -2006,15 +2032,15 @@ class PrimaryUI:
         flag = _ready_flag(token)
         try:
             flag.unlink()
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as exc:
+            _swallow("_admin_notice:2029", exc)
         except OSError as exc:
             _startup_log(f"ready flag cleanup failed: {exc}")
         self.app.status.set(self._zh("admin_restarting"))
         try:
             self.root.update_idletasks()
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_admin_notice:2036", exc)
         released = self._release_instance_mutex()
         _startup_log(f"admin launch token={token} mutex_released={released}")
         try:
@@ -2059,8 +2085,8 @@ class PrimaryUI:
                 return True
             try:
                 self.root.update_idletasks()
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_wait_for_ready:2082", exc)
             time.sleep(0.2)
         return flag.is_file()
 
@@ -2097,8 +2123,8 @@ class PrimaryUI:
                 if new:
                     try:
                         widget.configure(**{option: new})
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        _swallow("walk:2120", exc)
             for child in widget.winfo_children():
                 walk(child)
 
@@ -2117,8 +2143,8 @@ class PrimaryUI:
                 "-background", INPUT, "-foreground", TEXT,
                 "-selectbackground", ACCENT, "-selectforeground", "#FFFFFF",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_retint_popdown:2140", exc)
 
     def _page_title(self, parent, title, subtitle):
         tk.Label(
@@ -2400,8 +2426,8 @@ class PrimaryUI:
         values = {}
         try:
             values = json.loads(Path(self.app.config_path).read_text("utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_load_auto:2423", exc)
         config = values.get("auto_key") if isinstance(values, dict) else None
         if not isinstance(config, dict):
             config = {}
@@ -2425,8 +2451,8 @@ class PrimaryUI:
         values = {}
         try:
             values = json.loads(Path(self.app.config_path).read_text("utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_load_force_exit:2448", exc)
         config = values.get("force_exit") if isinstance(values, dict) else None
         if not isinstance(config, dict):
             config = {}
@@ -2524,8 +2550,8 @@ class PrimaryUI:
         if getattr(self, "_auto_bind_id", None):
             try:
                 self.root.unbind("<KeyPress>", self._auto_bind_id)
-            except Exception:
-                pass
+            except Exception as exc:
+                _swallow("_auto_unbind:2547", exc)
         self._auto_bind_id = None
         self._auto_recording = False
 
@@ -3129,6 +3155,26 @@ class PrimaryUI:
         score, _details = self._score_summary(detector, iface)
         return self._t("score_badge").format(score=f"{score:.3f}")
 
+    def _apply(self, key, widget, configure=None, setter=None, value=None):
+        """Apply a widget change only when it differs from the last render.
+
+        `configure`/`setter` are the callables that actually touch Tk; they are
+        skipped when the value is unchanged, which is the common case on a
+        150 ms loop.  `key` must be stable and unique per widget property.
+        """
+        cache = self._render_cache
+        if cache.get(key) == value:
+            return
+        cache[key] = value
+        if configure is not None:
+            widget.configure(**configure)
+        elif setter is not None:
+            setter(value)
+
+    def _force_refresh(self):
+        """Drop the render cache so the next _refresh repaints everything."""
+        self._render_cache.clear()
+
     def _refresh(self):
         if getattr(self.app, "closed", False):
             return
@@ -3150,25 +3196,33 @@ class PrimaryUI:
         else:
             badge_bg, badge_fg = BUTTON, MUTED
             overlay_fg = MUTED
-        self.mode_badge.configure(text=code, bg=badge_bg, fg=badge_fg)
+        self._apply("mode_badge", self.mode_badge,
+                    configure=dict(text=code, bg=badge_bg, fg=badge_fg),
+                    value=(code, badge_bg, badge_fg))
         score_text = self._score_readout(detector, iface) if running and dry else ""
         score_badge = self._score_badge(detector, iface) if running and dry else ""
         overlay = getattr(self, "_overlay", None)
         if overlay is not None:
             try:
-                self.overlay_label.configure(text=code, fg=overlay_fg)
-                self._overlay_panel.configure(highlightbackground=overlay_fg)
-            except tk.TclError:
-                pass
+                self._apply("overlay_label", self.overlay_label,
+                            configure=dict(text=code, fg=overlay_fg),
+                            value=(code, overlay_fg))
+                self._apply("overlay_panel", self._overlay_panel,
+                            configure=dict(highlightbackground=overlay_fg),
+                            value=overlay_fg)
+            except tk.TclError as exc:
+                _swallow("_refresh:3181", exc)
             self._set_overlay_score(score_badge)
             if getattr(self, "_score_overlay", None) is not None:
                 try:
-                    self.score_overlay_label.configure(fg=overlay_fg)
-                    self._score_overlay_panel.configure(
-                        highlightbackground=overlay_fg
-                    )
-                except tk.TclError:
-                    pass
+                    self._apply("score_overlay_label", self.score_overlay_label,
+                                configure=dict(fg=overlay_fg),
+                                value=overlay_fg)
+                    self._apply("score_overlay_panel", self._score_overlay_panel,
+                                configure=dict(highlightbackground=overlay_fg),
+                                value=overlay_fg)
+                except tk.TclError as exc:
+                    _swallow("_refresh:3190", exc)
         now = time.monotonic()
         if now - getattr(self, "_overlay_top_at", 0.0) >= 0.5:
             self._overlay_top_at = now
@@ -3177,49 +3231,64 @@ class PrimaryUI:
         name = IFACE_NAMES.get(iface, IFACE_NAMES["0"])
         if hasattr(self, "interface_var"):
             if self.language == "zh":
-                self.interface_var.set(f"当前界面：{code} · {name[0]}")
+                iface_text = f"当前界面：{code} · {name[0]}"
             else:
-                self.interface_var.set(f"Current interface: {code} · {name[1]}")
+                iface_text = f"Current interface: {code} · {name[1]}"
+            self._apply("interface_var", self.interface_var,
+                        setter=self.interface_var.set, value=iface_text)
 
         if hasattr(self, "scores_var"):
-            if score_text:
-                self.scores_var.set(score_text)
-            else:
-                self.scores_var.set(self._tr(self.app.scores.get()))
+            shown = score_text or self._tr(self.app.scores.get())
+            self._apply("scores_var", self.scores_var,
+                        setter=self.scores_var.set, value=shown)
             if hasattr(self, "scores_label"):
-                self.scores_label.configure(fg=ACCENT if score_text else MUTED)
+                self._apply("scores_label", self.scores_label,
+                            configure=dict(fg=ACCENT if score_text else MUTED),
+                            value=bool(score_text))
 
         if self._hud_ready():
-            self.mode_badge2.configure(text=self._t("ready"), bg=GREEN, fg=BG)
+            ready_state = ("ready", GREEN, BG)
         elif running:
-            self.mode_badge2.configure(
-                text=self._t("standby_badge"), bg=AMBER, fg=BG
-            )
+            ready_state = ("standby", AMBER, BG)
         else:
-            self.mode_badge2.configure(
-                text=self._t("standby_badge"), bg=BUTTON, fg=MUTED
-            )
+            ready_state = ("idle", BUTTON, MUTED)
+        if ready_state[0] == "ready":
+            ready_text = self._t("ready")
+        elif ready_state[0] == "standby":
+            ready_text = self._t("standby_badge")
+        else:
+            ready_text = self._t("standby_badge")
+        self._apply("mode_badge2", self.mode_badge2,
+                    configure=dict(text=ready_text, bg=ready_state[1],
+                                   fg=ready_state[2]),
+                    value=(ready_text, ready_state[1], ready_state[2]))
 
         state = self.app.state_head.get()
-        self.state_label.configure(
-            fg=self._state_color(state + " " + self.app.status.get())
-        )
-        self.mode_check.configure(fg=GREEN, activeforeground=GREEN)
+        state_color = self._state_color(state + " " + self.app.status.get())
+        self._apply("state_label", self.state_label,
+                    configure=dict(fg=state_color), value=state_color)
+        self._apply("mode_check", self.mode_check,
+                    configure=dict(fg=GREEN, activeforeground=GREEN),
+                    value=GREEN)
         if dry:
-            self.mode_warning.configure(text=self._t("test_warning"), fg=GREEN)
+            warning_text, warning_fg = self._t("test_warning"), GREEN
         else:
-            self.mode_warning.configure(
-                text=self._t("normal_warning"), fg=RED
-            )
-        self.action_btn.configure(
-            text=self._t("stop_monitor") if running else self._t("start_monitor"),
-            bg=RED if running else ACCENT,
-            activebackground=RED if running else ACCENT,
-            state="normal",
-        )
+            warning_text, warning_fg = self._t("normal_warning"), RED
+        self._apply("mode_warning", self.mode_warning,
+                    configure=dict(text=warning_text, fg=warning_fg),
+                    value=(warning_text, warning_fg))
+        action_text = self._t("stop_monitor") if running else self._t("start_monitor")
+        action_bg = RED if running else ACCENT
         busy = bool(getattr(self.app, "sound_import_busy", False))
-        self.import_btn.configure(state="disabled" if busy else "normal")
-        self.action_btn.configure(state="disabled" if busy else "normal")
+        busy_state = "disabled" if busy else "normal"
+        # One cache entry per widget: text/colour and busy state land in the
+        # same configure() call so neither can overwrite the other.
+        self._apply("action_btn", self.action_btn,
+                    configure=dict(text=action_text, bg=action_bg,
+                                   activebackground=action_bg, state=busy_state),
+                    value=(action_text, action_bg, busy_state))
+        self._apply("import_btn", self.import_btn,
+                    configure=dict(state=busy_state), value=busy_state)
 
         if self.root.focus_get() is not self.hotkey_combo:
             current = hotkey_label(self.app.hotkey_service.combo)
@@ -3233,8 +3302,8 @@ class PrimaryUI:
         self._loop_error_at = now
         try:
             self.app.event("ui_loop_error", error=f"{type(exc).__name__}: {exc}")
-        except Exception:
-            pass
+        except Exception as exc:
+            _swallow("_report_loop_error:3256", exc)
 
     def _loop(self):
         if getattr(self.app, "closed", False):

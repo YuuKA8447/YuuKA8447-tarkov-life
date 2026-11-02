@@ -174,42 +174,69 @@ def build_call(worker):
     return call, tuple(names)
 
 
+def locate_branch(worker):
+    """Find the cancel-on-extraction branch by instruction shape.
+
+    The offsets used to be hard-coded (6374..6570).  They hold for the
+    current base EXE and silently corrupt the patch the moment the base or
+    the Python version changes, so the site is located by matching the
+    instruction pattern instead and the expected size is asserted.
+    """
+    items = list(dis.get_instructions(worker))
+    for index, item in enumerate(items):
+        if not (item.opname == "LOAD_FAST" and item.argval == "extracted"):
+            continue
+        window = items[index:index + 4]
+        if len(window) < 4:
+            continue
+        if not (window[1].opname.startswith("POP_JUMP")
+                and window[2].opname in ("LOAD_DEREF", "LOAD_FAST")
+                and window[2].argval == "self"):
+            continue
+        const_hit = [i for i in items[index:index + 8]
+                     if i.opname == "LOAD_CONST"
+                     and i.argval == "extraction_transition"]
+        if not const_hit:
+            continue
+        start = window[2].offset
+        end = window[1].argval
+        if not isinstance(end, int) or end <= start:
+            raise SystemExit(
+                f"extraction branch at {start} has no forward exit target"
+            )
+        return start, end
+    raise SystemExit(
+        "extraction branch not found: the monitor worker no longer matches "
+        "the LOAD_FAST extracted / POP_JUMP / LOAD_DEREF self pattern"
+    )
+
+
 def patch_worker(worker):
     code = worker.co_code
-    if len(code) <= BRANCH_END:
-        raise SystemExit("worker code is shorter than the expected branch")
-    if BRANCH_END - BRANCH_START != 196:
-        raise SystemExit("branch size changed")
+    start, end = locate_branch(worker)
+    span = end - start
+    if start != BRANCH_START or end != BRANCH_END:
+        print(
+            f"note: extraction branch located at {start}..{end} "
+            f"(baseline {BRANCH_START}..{BRANCH_END})"
+        )
+    if span < 44:
+        raise SystemExit(f"branch span {span} cannot hold the 44-byte call")
 
     instructions = {item.offset: item for item in dis.get_instructions(worker)}
-    checks = {
-        6370: ("LOAD_FAST", "extracted"),
-        6372: ("POP_JUMP_FORWARD_IF_FALSE", 6570),
-        6374: ("LOAD_DEREF", "self"),
-        6398: ("LOAD_CONST", "extraction_transition"),
-        6502: ("LOAD_METHOD", "cancel"),
-    }
-    for offset, (opname, argval) in checks.items():
-        item = instructions.get(offset)
-        if item is None or item.opname != opname:
-            raise SystemExit(f"worker anchor {offset} is {item!r}, expected {opname}")
-        if argval is not None and item.argval != argval:
-            raise SystemExit(
-                f"worker anchor {offset} arg is {item.argval!r}, expected {argval!r}"
-            )
     for item in instructions.values():
         if (item.opname.startswith(("JUMP", "POP_JUMP", "FOR_ITER"))
                 and isinstance(item.argval, int)
-                and BRANCH_START <= item.argval < BRANCH_END):
+                and start <= item.argval < end):
             raise SystemExit(
                 f"jump at {item.offset} enters replaced branch at {item.argval}"
             )
 
     call, names = build_call(worker)
-    replacement = call + encode("NOP") * ((BRANCH_END - BRANCH_START - len(call)) // 2)
-    if len(replacement) != BRANCH_END - BRANCH_START:
+    replacement = call + encode("NOP") * ((span - len(call)) // 2)
+    if len(replacement) != span:
         raise SystemExit("replacement branch length mismatch")
-    new_code = code[:BRANCH_START] + replacement + code[BRANCH_END:]
+    new_code = code[:start] + replacement + code[end:]
     if len(new_code) != len(code):
         raise SystemExit("worker code length changed")
     return worker.replace(co_code=new_code, co_names=names)
@@ -328,17 +355,29 @@ def verify(module):
         raise SystemExit("App or worker missing after patch")
     if find_code(app, "_extraction_step") is None:
         raise SystemExit("App._extraction_step missing after patch")
-    if len(worker.co_code) != 8854:
-        raise SystemExit(f"worker code size changed to {len(worker.co_code)}")
+
+    # After patching, the branch no longer starts with the old pattern, so the
+    # call site is derived from where the replacement call actually landed.
     items = {item.offset: item for item in dis.get_instructions(worker)}
+    start = None
+    for item in items.values():
+        if item.opname == "LOAD_DEREF" and item.argval == "self":
+            nxt = items.get(item.offset + 2)
+            if (nxt is not None and nxt.opname == "LOAD_METHOD"
+                    and nxt.argval == "_extraction_step"):
+                start = item.offset
+                break
+    if start is None:
+        raise SystemExit("patched call site for _extraction_step not found")
+
     expected = [
-        (CALL_SITE, "LOAD_DEREF", "self"),
-        (6376, "LOAD_METHOD", "_extraction_step"),
-        (6398, "LOAD_FAST", "extraction_guard"),
-        (6400, "LOAD_FAST", "now"),
-        (6402, "PRECALL", 2),
-        (6406, "CALL", 2),
-        (6416, "POP_TOP", None),
+        (start, "LOAD_DEREF", "self"),
+        (start + 2, "LOAD_METHOD", "_extraction_step"),
+        (start + 24, "LOAD_FAST", "extraction_guard"),
+        (start + 26, "LOAD_FAST", "now"),
+        (start + 28, "PRECALL", 2),
+        (start + 32, "CALL", 2),
+        (start + 42, "POP_TOP", None),
     ]
     for offset, opname, argval in expected:
         item = items.get(offset)
@@ -348,14 +387,19 @@ def verify(module):
             raise SystemExit(
                 f"call site {offset} arg is {item.argval!r}, expected {argval!r}"
             )
-    for offset in range(CALL_SITE + 44, BRANCH_END, 2):
+    # Everything from the end of the call up to the branch exit stays NOP.
+    exit_at = None
+    for item in items.values():
+        if item.offset > start and item.opname == "LOAD_DEREF" \
+                and item.argval == "self":
+            exit_at = item.offset
+            break
+    if exit_at is None:
+        raise SystemExit("branch exit not found after the call")
+    for offset in range(start + 44, exit_at, 2):
         item = items.get(offset)
         if item is None or item.opname != "NOP":
             raise SystemExit(f"padding at {offset} is {item!r}, expected NOP")
-    if items[BRANCH_END].opname != "LOAD_DEREF":
-        raise SystemExit("gate update entry is not LOAD_DEREF after padding")
-    if items[BRANCH_END].argval != "self":
-        raise SystemExit("gate update entry changed after patch")
     return app, worker
 
 

@@ -6,6 +6,7 @@ TOC, then rebuilds the outer CArchive TOC/cookie. PYZ is the last data entry,
 so no other archive entry has to move.
 """
 import hashlib
+import json
 import marshal
 import struct
 import sys
@@ -13,8 +14,9 @@ import zlib
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+VERSION = json.loads((BASE / "version.json").read_text(encoding="utf-8"))["version"]
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "base" / "base_branded.exe"
-DST = Path(sys.argv[2]) if len(sys.argv) > 2 else BASE / "build" / "从零开始的塔科夫生活_V1.4.1.0.exe"
+DST = Path(sys.argv[2]) if len(sys.argv) > 2 else BASE / "build" / f"从零开始的塔科夫生活_V{VERSION}.exe"
 MODULES = {
     "primary_ui": BASE / "ui_compact.marshal",
     "sound_library": BASE / "sound_library.marshal",

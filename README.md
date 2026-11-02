@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.4.1.0-7C5CFF?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/version-1.4.2.0-7C5CFF?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4?style=flat-square" alt="platform">
   <img src="https://img.shields.io/badge/license-MIT-3DA639?style=flat-square" alt="license">
   <img src="https://img.shields.io/badge/status-official-4ADE80?style=flat-square" alt="status">
@@ -18,27 +18,27 @@
 > 只截取游戏画面顶部条带，用模板匹配判断当前界面，在屏幕角落显示识别结果。  
 > 不读取游戏内存、不注入进程、不修改游戏文件，也不提供透视、自瞄、物资显示或雷达功能。
 
-当前正式版：**V1.4.1.0**（2026-10-28，测试模式得分读数、独立得分浮窗与底部锚点顺序修正）。源码、文档与发布资产均已同步至本仓库；上一发布版为 **V1.3.2.2**（2026-10-26）。本仓库由 GitHub 账号 `YuuKA8447` 托管；旧账号 `youxia8447-oss` 已停用，更早版本未迁移，详见 [CHANGELOG.md](CHANGELOG.md)。
+当前正式版：**V1.4.2.0**（2026-10-31，构建工程化：版本号单一真源、构建前置校验与静默异常留痕；识别、界面与按键行为与 V1.4.1.0 一致）。本版为本地构建，尚未上传 GitHub；GitHub 最新发布仍为 `v1.4.1.0`。本仓库由 GitHub 账号 `YuuKA8447` 托管；旧账号 `youxia8447-oss` 已停用，更早版本未迁移，详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
 ## 下载
 
-> 最新发布为 V1.4.1.0，下方资产已同步更新。
+> 本版 V1.4.2.0 为本地构建，GitHub Release 仍为 `v1.4.1.0`；下表链接在上传后生效。
 
-前往 [Releases](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/latest) 下载最新发布版 V1.4.1.0。
+前往 [Releases](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/latest) 下载发布版 V1.4.1.0（GitHub 现有资产）。
 
 | 文件 | 说明 |
 | --- | --- |
-| [`Tarkov-Life-V1.4.1.0.zip`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.1.0/Tarkov-Life-V1.4.1.0.zip) | 推荐。解压后含中文命名 EXE、`icons` 目录、使用说明、更新说明、项目说明与 SHA256 |
-| [`Tarkov-Life-V1.4.1.0.exe`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.1.0/Tarkov-Life-V1.4.1.0.exe) | 单文件免安装版本 |
-| [`Tarkov-Life-V1.4.1.0.sha256`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.1.0/Tarkov-Life-V1.4.1.0.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
+| [`Tarkov-Life-V1.4.2.0.zip`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.2.0/Tarkov-Life-V1.4.2.0.zip) | 推荐。解压后含中文命名 EXE、`icons` 目录、使用说明、更新说明、项目说明与 SHA256 |
+| [`Tarkov-Life-V1.4.2.0.exe`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.2.0/Tarkov-Life-V1.4.2.0.exe) | 单文件免安装版本 |
+| [`Tarkov-Life-V1.4.2.0.sha256`](https://github.com/YuuKA8447/YuuKA8447-tarkov-life/releases/download/v1.4.2.0/Tarkov-Life-V1.4.2.0.sha256) | ZIP 与 EXE 的 SHA256 校验文件 |
 
-EXE 60,157,466 字节 · ZIP 59,671,280 字节。下载后可在同一目录执行 `sha256sum -c Tarkov-Life-V1.4.1.0.sha256` 校验。
+EXE 60,159,313 字节 · ZIP 59,675,955 字节。下载后可在同一目录执行 `sha256sum -c Tarkov-Life-V1.4.2.0.sha256` 校验。
 
 ```text
-EXE  993372B8916867259A6E6FE0B90C244A5D64121D85B303C65CEEAC853FDD8ABC
-ZIP  98D611E44B3D070E29E01433E6AE961E91EA06FAA344F1CDFD913876C206B885
+EXE  4AFC3A984F4E41E4FC0CD2E1543DD55BBB63EDD0ACEF3930EC0A4D95EA873FD6
+ZIP  0B5CADA4B7D4420529530DFBD0936C1F0FAEF5A302857C0A78909AB03490A528
 ```
 
 系统要求：Windows 10 / 11 64 位；建议游戏使用窗口化或无边框窗口，保持 16:9 或 16:10。
@@ -81,7 +81,7 @@ ZIP  98D611E44B3D070E29E01433E6AE961E91EA06FAA344F1CDFD913876C206B885
 
 ## 快速上手
 
-1. 解压 ZIP，保持 `icons` 文件夹与 EXE 同级，双击 `从零开始的塔科夫生活_V1.4.1.0.exe`。
+1. 解压 ZIP，保持 `icons` 文件夹与 EXE 同级，双击 `从零开始的塔科夫生活_V1.4.2.0.exe`。
 2. 启动时如询问管理员权限，按需选择；发送 Alt+F4 与自动按键需要管理员权限。
 3. 进入游戏后按 **F1** 开启或关闭监控。
 4. 屏幕右上角会显示当前界面编号，例如 `TKF-7314-0`、`TKF-7314-A`、`TKF-7314-Z`。开启测试模式后会出现同款独立得分浮窗（只显示 `SC <分值>`，更小一档）：顶部锚点时在编号下方，底部锚点时在编号上方，停止监控后自动收起。
@@ -143,11 +143,11 @@ ZIP  98D611E44B3D070E29E01433E6AE961E91EA06FAA344F1CDFD913876C206B885
 - 原始截图 `ui识别\`（因体积与隐私原因未随仓库分发，目录规范见 [ui识别/识别特征与识别画面.txt](ui识别/识别特征与识别画面.txt)）
 - 测试图命名：`ui识别\` 下所有 `测试图*` 截图统一为 `{判定字母}{序号}_{得分}.png`，判定字母取当前检测器结果，序号按字母跨目录递增，得分保留 3 位小数；规则与维护方式见 [ui识别/测试图命名规则.txt](ui识别/测试图命名规则.txt)，本轮新旧对照见 `ui识别/测试图命名对照_20261028.csv`
 
-准备好上述依赖后，双击 `一键构建.bat`，或按脚本顺序执行 16 步构建。使用系统 Python 时，把 BAT 中的 `tools\py311\python.exe` 替换为你的 `python.exe`。构建链包含 50 张源图识别回归、7 条过曝页签条带回归与撤离状态机测试，任一失败都会中止。
+准备好上述依赖后，双击 `一键构建.bat`，或按脚本顺序执行 18 步构建。版本号统一由根目录 `version.json` 控制，构建第 2 步会校验版本一致性、第 6 步校验 `.marshal` 与源码同步，不一致会立即失败。使用系统 Python 时，把 BAT 中的 `tools\py311\python.exe` 替换为你的 `python.exe`。构建链包含 50 张源图识别回归、7 条过曝页签条带回归与撤离状态机测试，任一失败都会中止。
 
-参考数据：用当前母版跑完整 16 步全部通过，产出 EXE `60,157,466` 字节（SHA256 `993372B8916867259A6E6FE0B90C244A5D64121D85B303C65CEEAC853FDD8ABC`）、ZIP `59,671,280` 字节（SHA256 `98D611E44B3D070E29E01433E6AE961E91EA06FAA344F1CDFD913876C206B885`）；50 张源图全帧与条带、7 条过曝条带与撤离状态机测试全部通过。
+参考数据：用当前母版跑完整 18 步全部通过，产出 EXE `60,159,313` 字节（SHA256 `4AFC3A984F4E41E4FC0CD2E1543DD55BBB63EDD0ACEF3930EC0A4D95EA873FD6`）、ZIP `59,675,955` 字节（SHA256 `0B5CADA4B7D4420529530DFBD0936C1F0FAEF5A302857C0A78909AB03490A528`）；50 张源图全帧与条带、7 条过曝条带与撤离状态机测试全部通过。
 
-> 当前源码中的版本常量已同步为 `V1.4.1.0`，直接构建即得到与归档一致的正式版（从已裁剪母版构建时 PYZ 会追加约 484 KB 模块数据，体积略大于官方发布包，功能与识别结果相同）。
+> 当前源码中的版本常量已同步为 `V1.4.2.0`（真源为 `version.json`），直接构建即得到与归档一致的正式版（从已裁剪母版构建时 PYZ 会追加约 484 KB 模块数据，体积略大于官方发布包，功能与识别结果相同）。
 
 > 仓库不分发原始截图。`ui识别\画面识别 M 撤离结束\` 与 C 页 4 张新增地图截图都在本地保留原图；C 页模板直接取自 `识别特征3.png` ～ `识别特征6.png`，裁剪参数（`0,0,1920,240`）记录在 `scripts\build_ui_templates.py`。缺少任一目录时，第 5、6、8 步会直接报错而不是静默跳过。
 
@@ -155,16 +155,18 @@ ZIP  98D611E44B3D070E29E01433E6AE961E91EA06FAA344F1CDFD913876C206B885
 
 ## 版本与更新
 
-- **V1.4.1.0** — 当前正式版（GitHub Release `v1.4.1.0`）。修正底部锚点下的双浮窗顺序：浮窗位置选居中下、左下或右下时，`SC <分值>` 小窗显示在编号浮窗上方，编号浮窗保持贴底；顶部锚点仍为编号在上、得分在下，间距 6 px。按 PATCH 规则由 `1.4.0.0` 递增为 `1.4.1.0`（BUILD 归零）。布局单测 42 项、50 图 + 7 切片回归、撤离状态机与 `--smoke-test` 全部通过；右下锚点已在 2560×1600 实图端到端验证。
+- **V1.4.2.0** — 当前正式版（本地构建，未上传 GitHub）。构建工程化：新增 `version.json` 作为版本号唯一真源，六个构建脚本与 `一键构建.bat` 改为读取它；构建链由 16 步增至 18 步，新增第 2 步版本一致性校验与第 6 步 `.marshal` 同步校验；34 处静默 `except: pass` 改为 `_swallow` 限流留痕；`patch_monitor_extraction.py` 去掉硬编码字节偏移改为按指令模式语义定位；更新说明改为从 `CHANGELOG.md` 抽取；新增 `scripts
+eference\monitor_reference.txt` 供阅读。识别模板、阈值、撤离状态机、按键与浮窗行为与 V1.4.1.0 完全一致。按 BUILD 规则由 `1.4.1.0` 递增为 `1.4.2.0`。50 图 + 7 切片回归、撤离状态机、`--smoke-test` 与 `validate_final` 全部通过。
+- **V1.4.1.0** — 上一正式版（GitHub Release `v1.4.1.0`）。修正底部锚点下的双浮窗顺序：浮窗位置选居中下、左下或右下时，`SC <分值>` 小窗显示在编号浮窗上方，编号浮窗保持贴底；顶部锚点仍为编号在上、得分在下，间距 6 px。按 PATCH 规则由 `1.4.0.0` 递增为 `1.4.1.0`（BUILD 归零）。布局单测 42 项、50 图 + 7 切片回归、撤离状态机与 `--smoke-test` 全部通过；右下锚点已在 2560×1600 实图端到端验证。
 - **V1.4.0.0** — 上一正式版（本地构建，未单独发布）。测试模式新增“当前画面得分读数”：开启测试模式并开始监控后，状态卡片显示当前界面判定所依据的得分与分项；新增第二个同款独立浮窗，只显示 `SC <分值>`，字号与尺寸比编号浮窗小一档，同色、间距 6 px，停止监控后自动收起。按 MINOR 规则由 `1.3.3.0` 递增为 `1.4.0.0`（PATCH、BUILD 归零）。识别模板、阈值、撤离状态机与按键行为未改动；50 图 + 7 切片回归、撤离状态机测试与 `--smoke-test` 全部通过。
 - **V1.3.3.0** — 更早的正式版。提高过曝画面下的识别得分：`scores_top` 改为两遍评分，`body_shape >= 0.35` 时用 `CLAHE(2.0, 8×8)` 重算轮廓与血条并取较高分；页签取「原图 / CLAHE 2.0 / CLAHE 4.0」最高分。18 张低分 A 页最低 `0.502 → 0.550`、平均 `0.557 → 0.590`，判定仍为 A；H/I 页越过 0.70 直接命中；回归 50 张 + 7 条过曝条带全部通过。本版按 PATCH 规则由 `1.3.2.4` 递增为 `1.3.3.0`，纠正了此前内部构建 `1.3.2.5` 只递增 BUILD 的编号偏差。
 - **V1.3.2.5** — 内部构建，未对外发布；识别代码与 V1.3.3.0 相同，仅版本号口径错误，归档保留用于追溯。
 - **V1.3.2.4** — 修复半透明 / 过曝菜单页识别失败或误判 `U`：页签模板分数跌到 0.30–0.61 时，改用 D–J 七个页签框的亮度排名选出激活页签，并以右上角“返回”文字的亮度与边缘密度门控。两张 16:10 半透明背包页由 `0` / `U` 修正为 `D`，7 张过曝页签切片全部正确；回归 50 张 + 7 条过曝条带。
 - **V1.3.2.3** — 修复 C 页（游戏主页 / 暂停）换地图后无法识别：新增实验室、工厂、无名者、森林 4 张模板，C 页改为 5 张模板家族取最高分，阈值 `0.62 → 0.70`；内嵌模板 17 → 21 张，回归素材 41 → 48 张。
 - **V1.3.2.2** — 上一发布版（GitHub Release `v1.3.2.2`）。由原 `V1.2.0.3` 按 `MAJOR.MINOR.PATCH.BUILD` 四段版本归一化而来，PE FileVersion / ProductVersion、界面关于行、EXE、ZIP 与校验文件统一为 `1.3.2.2`。
-- 本地历史归档已按 GitHub 归档号重排为 `V1.1.0.0` ～ `V1.4.1.0`，按“新增功能 / 问题修复 / 功能调整与转正 / 版本归一化”分组，完整对照与 SHA256 见 `项目文件历史版本\归档索引.md`。本机保存 16 个归档；`V1.3.0.0`、`V1.3.1.0`、`V1.3.2.0`、`V1.3.2.1` 仅保留历史记录。
+- 本地历史归档已按 GitHub 归档号重排为 `V1.1.0.0` ～ `V1.4.2.0`，按“新增功能 / 问题修复 / 功能调整与转正 / 版本归一化”分组，完整对照与 SHA256 见 `项目文件历史版本\归档索引.md`。本机保存 16 个归档；`V1.3.0.0`、`V1.3.1.0`、`V1.3.2.0`、`V1.3.2.1` 仅保留历史记录。
 - 完整变更记录见 [CHANGELOG.md](CHANGELOG.md)。
-- 旧仓库的 `v1.1.1.0`、`v1.2.0.1` 两个 Release 未迁移到新仓库；历史包与校验值保留在本地归档，GitHub 目前已发布 `v1.3.2.2` 与 `v1.4.1.0`。
+- 旧仓库的 `v1.1.1.0`、`v1.2.0.1` 两个 Release 未迁移到新仓库；历史包与校验值保留在本地归档，GitHub 目前已发布 `v1.3.2.2` 与 `v1.4.2.0`。
 
 ---
 

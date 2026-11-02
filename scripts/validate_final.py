@@ -1,5 +1,6 @@
 """Verify the rebuilt EXE against the project modules and embedded assets."""
 import hashlib
+import json
 import marshal
 import os
 import struct
@@ -9,7 +10,8 @@ import zlib
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-EXE = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / "从零开始的塔科夫生活_V1.4.1.0.exe"
+VERSION = json.loads((BASE / "version.json").read_text(encoding="utf-8"))["version"]
+EXE = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "build" / f"从零开始的塔科夫生活_V{VERSION}.exe"
 COOKIE = b"MEI\x0c\x0b\x0a\x0b\x0e"
 
 REQUIRED_ASSETS = {

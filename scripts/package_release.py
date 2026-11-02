@@ -5,13 +5,14 @@ short usage notes, release notes and the full project document, stages the
 folder under dist, then packs the ZIP into release\\.
 """
 import hashlib
+import json
 import sys
 import zipfile
 from datetime import date
 from pathlib import Path
 
-VERSION = "1.4.1.0"
 BASE = Path(__file__).resolve().parent.parent
+VERSION = json.loads((BASE / "version.json").read_text(encoding="utf-8"))["version"]
 EXE_NAME = f"从零开始的塔科夫生活_V{VERSION}.exe"
 ICON_ROOT = BASE / "build" / "icons"
 ICON_FILES = ("first_icon.ico", "killer_queen.ico", "itachi_mangekyo.ico")
@@ -65,11 +66,7 @@ USAGE = """从零开始的塔科夫生活 V{version}（正式版）
 - 本版本使用 ui识别 文件夹中的 34 张 16:10 实机截图、16 张 2560×1440 实机截图、7 张过曝页签切片，以及“找到撤离点”黑名单横幅；内嵌 21 张识别模板。
 """.format(version=VERSION)
 
-NOTES = """# 更新说明 V{version}
-
-## 版本号说明
-- 按 `MAJOR.MINOR.PATCH.BUILD` 四段规则，本次修正底部锚点下的浮窗排列，属于向下兼容的问题修复，递增第 3 位 PATCH 并将 BUILD 归零：`1.4.0.0` → `1.4.1.0`。
-- 程序内部版本、EXE 文件名、PE FileVersion / ProductVersion、界面关于行、ZIP 名与校验文件均统一为 `1.4.1.0`。
+NOTES_HEADER = """# 更新说明 V{version}
 
 ## 版本号规则
 - 第 1 位 MAJOR：不兼容的重大变更，例如架构重写、旧存档/旧接口作废、玩家必须重开。
@@ -77,27 +74,42 @@ NOTES = """# 更新说明 V{version}
 - 第 3 位 PATCH：向下兼容地修复问题，例如修崩溃、调数值、修错别字。
 - 第 4 位 BUILD：构建序号或热修复号，每次打包 +1，或单独发布紧急补丁。
 
-## 本版改动
-- 测试模式新增“当前画面得分读数”：开启测试模式并开始监控后，状态卡片的分数行会显示当前界面判定所依据的得分与分项。
-- A 页显示战斗得分、人形轮廓与快捷栏分项；B 页显示撤离标题得分与绿色占比；C 页显示主页面得分。
-- D–J 页显示页签得分与次高分；走亮度兜底时显示页签亮度（/255）与亮度差。
-- K 页显示控制台得分；L 页显示设置得分；M 页显示撤离结束得分；U 页显示返回得分；Z 显示黑屏；0 显示无匹配，并附带战斗与最高页签得分，便于排查误判。
-- 测试模式下分数行使用高亮色；普通模式的分数行保持原监控读数不变。为避免两路更新互相覆盖，界面不再直接绑定监控线程的分数变量，改由界面刷新统一渲染。
-- 浮窗同步显示得分：测试模式监控中会出现第二个同款独立浮窗，字号与尺寸比编号浮窗小一档，只显示 `SC <分值>`；两个浮窗同步置顶，停止监控、关闭测试模式或关闭浮窗后得分浮窗自动收起。
-- 得分浮窗跟随编号浮窗的锚点与颜色：A 页琥珀、B 页红色、安全页绿色、其他页面灰色；顶部锚点时编号浮窗在上、得分浮窗在下，底部锚点时得分浮窗在上、编号浮窗贴底，两个浮窗始终保留 6 px 间距；右侧锚点对齐右边缘，左侧锚点对齐左边缘，居中锚点各自居中。
-- 识别模板、阈值、撤离状态机与按键行为均未改动。
+"""
 
-## 保留能力
-- 21 张内嵌识别模板、50 张图 + 7 条过曝条带回归、16 步构建链与三套主题图标机制不变。
-- 撤离流程、Alt+F4 暂停/恢复、退出兜底与启动提权交接保持原行为。
-
+NOTES_FOOTER = """
 ## 构建与校验
-- 版本资源：FileVersion / ProductVersion 与 `VS_FIXEDFILEINFO` 均为 `1.4.1.0`。
+- 版本资源：FileVersion / ProductVersion 与 `VS_FIXEDFILEINFO` 均为 `{version}`。
 - 50 张源图全帧与条带路径回归、7 条过曝页签条带回归通过；撤离流程状态机测试通过；`--smoke-test` 退出码 0。
 - 发布包结构：EXE、SHA256、使用说明、更新说明、项目说明与 `icons` 目录下三套 ICO。
 
 发布日期：{date}
-""".format(version=VERSION, date=date.today().isoformat())
+"""
+
+
+def take_changelog_section(version: str) -> str:
+    """Pull the `## V<version> ...` block out of CHANGELOG.md.
+
+    Keeping the release notes sourced from the repository changelog stops
+    the ZIP from shipping a stale copy of a previous version's notes.
+    """
+    path = BASE / "CHANGELOG.md"
+    if not path.is_file():
+        raise SystemExit(f"missing CHANGELOG.md: {path}")
+    text = path.read_text(encoding="utf-8")
+    marker = f"## V{version} "
+    start = text.find(marker)
+    if start < 0:
+        raise SystemExit(f"CHANGELOG.md has no section for V{version}")
+    end = text.find("\n## ", start + len(marker))
+    return text[start:end if end > 0 else len(text)].rstrip() + "\n"
+
+
+def build_notes(version: str) -> str:
+    return (
+        NOTES_HEADER.format(version=version)
+        + take_changelog_section(version)
+        + NOTES_FOOTER.format(version=version, date=date.today().isoformat())
+    )
 
 
 def write_text(path, text):
@@ -133,7 +145,7 @@ def main():
         f"built: {date.today().isoformat()}\n",
     )
     write_text(stage / "使用说明.txt", USAGE)
-    write_text(stage / f"更新说明_V{VERSION}.md", NOTES)
+    write_text(stage / f"更新说明_V{VERSION}.md", build_notes(VERSION))
 
     project_doc = BASE / "项目说明.md"
     if project_doc.is_file():

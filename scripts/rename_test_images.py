@@ -162,7 +162,14 @@ def main() -> int:
         row["keep"] = False
         rows.append(row)
 
-    for row in sorted(rows, key=lambda r: (str(r["path"].parent), r["old_name"])):
+    # Natural sort so A2 comes before A10; a plain string sort would scatter
+    # the numbering across the existing sequence.
+    def natural(text: str) -> list:
+        return [int(part) if part.isdigit() else part.lower()
+                for part in re.split(r"(\d+)", text)]
+
+    for row in sorted(rows, key=lambda r: (natural(str(r["path"].parent)),
+                                           natural(r["old_name"]))):
         if row["keep"]:
             continue
         verdict = row["verdict"]
@@ -171,13 +178,31 @@ def main() -> int:
         row["new_name"] = new_name
         row["target"] = row["path"].with_name(new_name)
 
-    collisions = [
-        row for row in rows
-        if not row["keep"] and row["target"].exists() and row["target"] != row["path"]
-    ]
+    # Two images with the same verdict and the same score map to the same
+    # name.  That is not a conflict with an existing file: the earlier image in
+    # the plan is itself being renamed away, so the check has to look at which
+    # targets are claimed twice, not at what is already on disk.
+    claimed: dict[Path, list[int]] = {}
+    for index, row in enumerate(rows):
+        if not row["keep"]:
+            claimed.setdefault(row["target"], []).append(index)
+    collisions = [target for target, owners in claimed.items() if len(owners) > 1]
     if collisions:
-        for row in collisions:
-            print(f"COLLISION {row['target']}")
+        for target in collisions:
+            print(f"COLLISION {target}")
+        return 1
+
+    # A target occupied by a file that is NOT part of this rename plan would
+    # be overwritten; detect that separately.
+    moving = {row["path"] for row in rows if not row["keep"]}
+    clobber = [
+        row["target"] for row in rows
+        if not row["keep"] and row["target"].exists()
+        and row["target"] not in moving and row["target"] != row["path"]
+    ]
+    if clobber:
+        for target in clobber:
+            print(f"WOULD-OVERWRITE {target}")
         return 1
 
     new_rows = [row for row in rows if not row["keep"]]
@@ -223,8 +248,16 @@ def main() -> int:
                 complement.get("tab_match", ""),
             ])
 
-    for row in new_rows:
-        row["path"].rename(row["target"])
+    # Rename in two passes: a target name may still be occupied by a file that
+    # is itself waiting to move (A3 -> A1 while A1 -> A2 has not run yet), so
+    # everything lands on a unique temporary name first.
+    staged: list[tuple[Path, Path]] = []
+    for index, row in enumerate(new_rows):
+        temp = row["path"].with_name(f"__rename_{index:04d}.tmp")
+        row["path"].rename(temp)
+        staged.append((temp, row["target"]))
+    for temp, target in staged:
+        temp.rename(target)
     print(f"renamed {len(new_rows)} files; mapping -> {mapping}")
     return 0
 
